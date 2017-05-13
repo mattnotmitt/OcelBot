@@ -1,0 +1,5 @@
+node_modules
+config.json
+npm-debug.log
+.ftpconfig
+.ftpignore
