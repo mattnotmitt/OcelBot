@@ -1,15 +1,12 @@
 {
-  "name": "matt-self-bot",
+  "name": "OcelBot",
   "version": "0.0.1",
-  "description": "A multi-purpose Discord selfbot",
+  "description": "I dunno",
   "main": "main.js",
   "dependencies": {
-    "discord.js": "github:hydrabolt/discord.js#stable",
+    "discord.js": "^11.0.0",
     "fs-jetpack": "^0.10.5",
-    "humanize-duration": "^3.10.0",
     "moment": "^2.17.1",
-    "moment-duration-format": "^1.3.0",
-    "request-promise-native": "^1.0.3",
     "twit": "^2.2.5"
   },
   "devDependencies": {
@@ -24,17 +21,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/artemisbot/matt-self-bot.git"
+    "url": "git+https://github.com/artemisbot/OcelBot.git"
   },
   "keywords": [
     "discord",
     "discord.js",
     "selfbot"
   ],
-  "author": "Matt C [matt@artemisbot.pw]",
+  "author": "Matt C [matt@artemisbot.uk]",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/artemisbot/matt-self-bot/issues"
+    "url": "https://github.com/artemisbot/OcelBot/issues"
   },
-  "homepage": "https://github.com/artemisbot/matt-self-bot#readme"
+  "homepage": "https://github.com/artemisbot/OcelBot#readme"
 }
