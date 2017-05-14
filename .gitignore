@@ -1,5 +1,9 @@
 node_modules
+emotes
 config.json
 npm-debug.log
 .ftpconfig
 .ftpignore
+quotes.json
+emotes.json
+pm2.json

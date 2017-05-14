@@ -3,6 +3,7 @@ exports.data = {
   command: 'reload',
   description: 'Reloads a command.',
   group: 'system',
+  syntax: '!reload [command]',
   author: 'Matt C: matt@artemisbot.pw',
   permissions: 4
 }
@@ -11,12 +12,15 @@ exports.func = async(msg, args, bot) => {
   let command
   if (bot.commands.has(args[0])) command = args[0]
   bot.log(`${msg.member.displayName} (${msg.author.username}#${msg.author.discriminator}) has reloaded command ${command} in #${msg.channel.name}.`)
-  if (!command) return msg.channel.sendMessage(`I cannot find the command: ${args[0]}`)
-  msg.channel.sendMessage(`Enabling: ${command}`)
+  if (!command) return msg.channel.send(`I cannot find the command: ${args[0]}`)
+  msg.channel.send(`Enabling: ${command}`)
     .then((m) => {
       bot.reload(command)
         .then(() => {
-          m.edit(`Successfully reloaded: ${command}`)
+          m.edit(`Successfully reloaded: ${command}`).then((m) => {
+            msg.delete(5000)
+            m.delete(5000)
+          })
         })
         .catch(e => m.edit(`Command reload failed: ${command}\n\`\`\`${e.stack}\`\`\``))
     })

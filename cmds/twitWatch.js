@@ -18,6 +18,7 @@ exports.data = {
   command: 'twitWatch',
   description: 'Creates a watcher for tweets.',
   group: 'watchers',
+  syntax: '!twitWatch [operation] [more-args]',
   author: 'Matt C: matt@artemisbot.pw',
   permissions: 4
 }
@@ -71,7 +72,7 @@ exports.watcher = (bot) => {
           icon_url: 'https://artemisbot.co.uk/i/nb7ko.png'
         }
       })
-      bot.channels.get(watch[tweet.user.id_str].channel).sendEmbed(embed)
+      bot.channels.get(watch[tweet.user.id_str].channel).send('', {embed: embed})
     }
   })
 }

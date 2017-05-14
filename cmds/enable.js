@@ -8,14 +8,17 @@ exports.data = {
   permissions: 4
 }
 
-exports.func = async (msg, args, bot) => {
+exports.func = async(msg, args, bot) => {
   const command = args[0]
   if (args.length !== 1) return msg.reply(`You haven't provided enough arguments. The proper syntax for "${this.data.name}" is \`${this.data.syntax}\`.`)
   bot.log(`${msg.member.displayName} (${msg.author.username}#${msg.author.discriminator}) has enabled ${command} in #${msg.channel.name}.`)
-  msg.channel.sendMessage(`Enabling: ${command}`)
+  msg.channel.send(`Enabling: ${command}`)
     .then((m) => {
       bot.enable(command)
-        .then(() => m.edit(`Successfully enabled: ${command}`))
+        .then(() => m.edit(`Successfully enabled: ${command}`).then((m) => {
+          msg.delete(5000)
+          m.delete(5000)
+        }))
         .catch((e) => m.edit(`Command enable failed: ${command}\n\`\`\`${e.stack}\`\`\``))
     })
 }

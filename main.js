@@ -1,12 +1,13 @@
 const Discord = require('discord.js'),
   moment = require('moment'),
   jetpack = require('fs-jetpack'),
+  chalk = require('chalk'),
   config = require('./config.json')
 
 const bot = new Discord.Client()
-
+bot.error = chalk.bold.red
 bot.log = (msg) => {
-  console.log(`[${moment().format('YYYY-MM-DD HH:mm:ss')}] ${msg}`)
+  console.log(`${chalk.bold.magenta(`[${moment().format('YYYY-MM-DD HH:mm:ss')}]`)} ${msg}`)
 }
 
 bot.load = (bot) => {
@@ -14,7 +15,7 @@ bot.load = (bot) => {
     files = jetpack.list('./cmds/')
   files.forEach((f) => {
     const props = require(`./cmds/${f}`)
-    bot.log(`Loading Command: ${props.data.name}. :ok_hand:`)
+    bot.log(chalk.green(`Loading Command: ${props.data.name}.`))
     cmds.set(props.data.command || props.data.regex, props)
   })
   return cmds
@@ -24,22 +25,20 @@ bot.commands = bot.load(bot)
 bot.commands.get('twitWatch').watcher(bot)
 
 bot.on('ready', () => {
-  bot.log('Connected to Discord servers.')
+  bot.log(chalk.green(`Connected to Discord servers & ${bot.guilds.size} guilds.`))
 })
 
 bot.on('message', (msg) => {
-  if (!(msg.channel.id === '257151961449627648' && (msg.content.startsWith(config.prefix) || msg.content.match(/:(.+?):/g))) || msg.author.id === bot.user.id) return
+  if (!(msg.channel.id === '275327051492229120' && (msg.content.startsWith(config.prefix) || msg.content.match(/:(.+?):/g))) || msg.author.id === bot.user.id) return
   let command = msg.content.split(' ')[0].slice(config.prefix.length),
     args = msg.content.split(' ').slice(1),
     emotes = msg.content.match(/:(.+?):/g),
-    memelist = jetpack.read('memes.json', 'json'),
+    quotelist = jetpack.read('quotes.json', 'json'),
     cmd
-  console.log(bot.commands.has(command))
-  console.log(args)
-  if (bot.commands.has(command) && (command !== 'emote' || command !== 'meme')) {
+  if (bot.commands.has(command) && (command !== 'emote' || command !== 'quote')) {
     cmd = bot.commands.get(command)
-  } else if (memelist[command]) {
-    bot.commands.get('meme').func(msg, command, bot)
+  } else if (quotelist[command]) {
+    bot.commands.get('quote').func(msg, command, bot)
   } else if (emotes) {
     bot.commands.get('emote').func(msg, emotes, bot)
   }
@@ -56,7 +55,7 @@ bot.on('error', console.error)
 bot.on('warn', console.warn)
 
 process.on('unhandledRejection', (err) => {
-  console.error(`Uncaught Promise Error: \n${err.stack}`)
+  bot.log(chalk.red(`Uncaught Promise Error: \n${err.stack}`))
 })
 
 bot.login(config.token)
@@ -108,4 +107,12 @@ bot.elevation = function (msg) {
   let arcRole = msg.guild.roles.find('name', 'Archivist')
   if (arcRole && msg.member.roles.has(arcRole.id)) return 2
   return 0
+}
+
+bot.delReply = function (msg, message, duration) {
+  duration = duration || 5000
+  msg.reply(message).then((m) => {
+    msg.delete(duration)
+    m.delete(duration)
+  })
 }

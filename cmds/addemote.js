@@ -53,6 +53,6 @@ exports.func = (msg, args, bot) => {
     }
   }).on('error', function (err) {
     console.error(err)
-    msg.channel.sendCode(err.message)
+    msg.channel.send('', {code: err.message})
   })
 }

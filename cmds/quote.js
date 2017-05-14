@@ -1,17 +1,17 @@
 const jetpack = require('fs-jetpack')
 
 exports.data = {
-  name: 'Memes',
-  description: 'Sends a meme/message to the channel specified.',
-  group: 'fun',
-  command: 'meme',
+  name: 'Quotes',
+  description: 'Sends a quote to the channel specified.',
+  group: 'quotes',
+  command: 'quote',
   author: 'Matt C: matt@artemisbot.pw'
 }
 
-exports.func = (msg, meme, bot) => {
-  let memelist = jetpack.read('memes.json', 'json')
-  if (memelist[meme] && msg.channel.id === '257151961449627648') {
-    bot.log(`${msg.member.displayName} (${msg.author.username}#${msg.author.discriminator}) has used meme ${meme} in #${msg.channel.name}.`)
-    msg.channel.send(memelist[meme])
+exports.func = (msg, quote, bot) => {
+  let quotelist = jetpack.read('quotes.json', 'json')
+  if (quotelist[quote] && msg.channel.id === '275327051492229120') {
+    bot.log(`${msg.member.displayName} (${msg.author.username}#${msg.author.discriminator}) has used quote ${quote} in #${msg.channel.name}.`)
+    msg.channel.send(quotelist[quote])
   }
 }

@@ -15,7 +15,7 @@ exports.func = (msg, emotes, bot) => {
     let emoteData = emotelist[emote.substring(1, emote.length - 1)]
     if (emoteData) {
       bot.log(`${msg.member.displayName} (${msg.author.username}#${msg.author.discriminator}) has used emote ${emote} in #${msg.channel.name}.`)
-      msg.channel.sendFile(`./emotes/${emoteData.file}`)
+      msg.channel.send('', {file: `./emotes/${emoteData.file}`})
       emotelist[emote.substring(1, emote.length - 1)].used++
       jetpack.write('emotes.json', emotelist)
     }

@@ -4,6 +4,7 @@ exports.data = {
   command: 'eval',
   description: 'Sends an eval',
   group: 'system',
+  syntax: '!eval [script]',
   author: 'Matt C: matt@artemisbot.pw',
   permissions: 4
 }
@@ -15,9 +16,9 @@ exports.func = async (msg, args, bot) => {
     var evaled = eval(code);
     if (typeof evaled !== 'string')
       evaled = require('util').inspect(evaled);
-    msg.channel.sendMessage("```xl\n" + clean(evaled) + "\n```").catch(console.error);
+    msg.channel.send("```xl\n" + clean(evaled) + "\n```").catch(console.error);
   } catch (err) {
-    msg.channel.sendMessage("`ERROR` ```xl\n" + clean(err) + "\n```").catch(console.error);
+    msg.channel.send("`ERROR` ```xl\n" + clean(err) + "\n```").catch(console.error);
   }
 };
 

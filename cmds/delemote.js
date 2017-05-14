@@ -6,7 +6,7 @@ exports.data = {
   group: 'emotes',
   command: 'delemote',
   syntax: '!delemote [emote_name]',
-  author: 'Matt C: matt@artemisbot.pw',
+  author: 'Matt C: matt@artemisbot.uk',
   permissions: 3
 }
 

@@ -5,6 +5,7 @@ exports.data = {
   command: 'ping',
   description: 'Ping check.',
   group: 'system',
+  syntax: '!ping',
   author: 'Matt C: matt@artemisbot.pw',
   permissions: 3
 }
