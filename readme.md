@@ -20,7 +20,8 @@ You will also want to set up your API keys in the file `config.json`:
   "consumer_secret": "Twitter API Keys",
   "access_token": "Twitter API Keys",
   "access_token_secret": "Twitter API Keys",
-  "twitWatch": {"Do not edit this Object"}
+  "twitWatch": {"Do not edit this Object"},
+  "activeChannels": ["Channels where bot commands will work (quotes & emotes not counted)"]
 }
 ```
 You can now run the bot by executing this:
