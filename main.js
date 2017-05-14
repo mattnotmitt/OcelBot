@@ -5,6 +5,7 @@ const Discord = require('discord.js'),
   config = require('./config.json')
 
 const bot = new Discord.Client()
+bot.permitChan = config.activeChannels
 bot.error = chalk.bold.red
 bot.log = (msg) => {
   console.log(`${chalk.bold.magenta(`[${moment().format('YYYY-MM-DD HH:mm:ss')}]`)} ${msg}`)
@@ -29,13 +30,13 @@ bot.on('ready', () => {
 })
 
 bot.on('message', (msg) => {
-  if (!(msg.channel.id === '275327051492229120' && (msg.content.startsWith(config.prefix) || msg.content.match(/:(.+?):/g))) || msg.author.id === bot.user.id) return
+  if (!(msg.content.startsWith(config.prefix) || msg.content.match(/:(.+?):/g)) || msg.author.id === bot.user.id) return
   let command = msg.content.split(' ')[0].slice(config.prefix.length),
     args = msg.content.split(' ').slice(1),
     emotes = msg.content.match(/:(.+?):/g),
     quotelist = jetpack.read('quotes.json', 'json'),
     cmd
-  if (bot.commands.has(command) && (command !== 'emote' || command !== 'quote')) {
+  if (bot.commands.has(command) && (command !== 'emote' || command !== 'quote') && bot.permitChan.indexOf(msg.channel.id) >= 0) {
     cmd = bot.commands.get(command)
   } else if (quotelist[command]) {
     bot.commands.get('quote').func(msg, command, bot)
@@ -101,7 +102,7 @@ bot.disable = function (command) {
 bot.elevation = function (msg) {
   if (msg.author.id === config.ownerID) return 4
   let modRole = msg.guild.roles.find('name', 'Moderator')
-  let staffRole = msg.guild.roles.find('name', 'Zergling')
+  let staffRole = msg.guild.roles.find('name', 'A&S')
   let adminRole = msg.guild.roles.find('name', 'Puppet Master')
   if ((adminRole || staffRole || adminRole) && (msg.member.roles.has(modRole.id) || msg.member.roles.has(staffRole.id) || msg.member.roles.has(adminRole.id))) return 3
   let arcRole = msg.guild.roles.find('name', 'Archivist')
