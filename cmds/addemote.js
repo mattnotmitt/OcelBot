@@ -11,6 +11,9 @@ exports.data = {
   permissions: 2
 }
 
+/* Pretty much stolen from C.C. by Windsdon: Copyright (c) 2017 Windsdon
+https://github.com/Windsdon/discord-bot-core/blob/master/plugins/emotes/plugin.js#L322 */
+
 exports.func = (msg, args, bot) => {
   let emotelist = jetpack.read('emotes.json', 'json'),
     name = args[0],
