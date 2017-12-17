@@ -1,0 +1,40 @@
+"eslintConfig": {
+	"env": {
+		"node": true,
+		"es6": true
+	},
+	"extends": [
+		"xo/esnext",
+		"./node_modules/xo/config/plugins.js"
+	],
+	"rules": {
+		"no-unused-expressions": ["error", {
+			"allowTernary": true,
+			"allowShortCircuit": true
+		}],
+		"camelcase": [
+			"error",
+			{
+				"properties": "never"
+			}
+		],
+		"no-unassigned-import": [
+			"off",
+			{}
+		],
+		"new-cap": [
+			"error",
+			{
+				"capIsNew": false
+			}
+		],
+		"no-return-assign": [
+			"off",
+			{}
+		],
+		"complexity": [
+			"error",
+			25
+		]
+	}
+},

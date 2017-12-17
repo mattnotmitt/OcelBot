@@ -1,119 +1,290 @@
-const Discord = require('discord.js'),
-  moment = require('moment'),
-  jetpack = require('fs-jetpack'),
-  chalk = require('chalk'),
-  config = require('./config.json')
+const Discord = require('discord.js');
+const jetpack = require('fs-jetpack');
+const chalk = require('chalk');
+const Database = require('./lib/db');
+const log = require('./lib/log')('Core');
+const Server = require('./lib/models/server');
+const config = require('./config.json');
 
-const bot = new Discord.Client()
-bot.permitChan = config.activeChannels
-bot.error = chalk.bold.red
-bot.log = (msg) => {
-  console.log(`${chalk.bold.magenta(`[${moment().format('YYYY-MM-DD HH:mm:ss')}]`)} ${msg}`)
-}
+const bot = new Discord.Client();
+bot.db = Database.start();
 
-bot.load = (bot) => {
-  const cmds = new Discord.Collection(),
-    files = jetpack.list('./cmds/')
-  files.forEach((f) => {
-    const props = require(`./cmds/${f}`)
-    bot.log(chalk.green(`Loading Command: ${props.data.name}.`))
-    cmds.set(props.data.command || props.data.regex, props)
-  })
-  return cmds
-}
+bot.permitChan = config.activeChannels;
 
-bot.commands = bot.load(bot)
-bot.commands.get('twitWatch').watcher(bot)
+bot.loadCmds = () => {
+	return new Promise((resolve, reject) => {
+		try {
+			const cmds = new Discord.Collection();
+			const cmdList = jetpack.list('./cmds/');
+			const loadedList = [];
+			cmdList.forEach(f => {
+				try {
+					const props = require(`./cmds/${f}`);
+					log.verbose(`Loading Command: ${props.data.name}. 👌`);
+					loadedList.push(props.data.name);
+					cmds.set(props.data.command, props);
+				} catch (err) {
+					reject(err);
+				}
+			});
+			log.info(chalk.green(`Loaded ${loadedList.length} command(s) (${loadedList.join(', ')}).`));
+			resolve(cmds);
+		} catch (err) {
+			reject(err);
+		}
+	});
+};
 
-bot.on('ready', () => {
-  bot.log(chalk.green(`Connected to Discord servers & ${bot.guilds.size} guilds.`))
-})
+bot.loadWatchers = bot => {
+	return new Promise((resolve, reject) => {
+		try {
+			const watchers = new Discord.Collection();
+			const watcherList = jetpack.list('./watchers/');
+			const watcherData = jetpack.read('/home/matt/mattBot/watcherData.json', 'json');
+			const loadedList = [];
+			const skippedList = [];
+			watcherList.forEach(f => {
+				try {
+					const props = require(`./watchers/${f}`);
+					if (typeof watcherData[props.data.command] !== 'object') {
+						watcherData[props.data.command] = {
+							enable: true
+						};
+					}
+					if (typeof watcherData[props.data.command].enable !== 'boolean') {
+						watcherData[props.data.command].enable = true;
+					}
+					jetpack.write('/home/matt/mattBot/watcherData.json', watcherData);
+					if (watcherData[props.data.command].enable === true) {
+						log.verbose(`Loading Watcher: ${props.data.name}. 👌`);
+						loadedList.push(props.data.name);
+						watchers.set(props.data.command, props);
+						props.watcher(bot);
+					} else {
+						log.verbose(`Skipped loading ${props.data.name} as it is disabled. ❌`);
+						skippedList.push(props.data.name);
+					}
+				} catch (err) {
+					reject(err);
+				}
+			});
+			log.info(chalk.green(`Loaded ${loadedList.length} watcher(s) (${loadedList.join(', ')}) and skipped ${skippedList.length} (${skippedList.join(', ')}).`));
+			resolve(watchers);
+		} catch (err) {
+			reject(err);
+		}
+	});
+};
 
-bot.on('message', (msg) => {
-  if (!(msg.content.startsWith(config.prefix) || msg.content.match(/:(.+?):/g)) || msg.author.id === bot.user.id) return
-  let command = msg.content.split(' ')[0].slice(config.prefix.length),
-    args = msg.content.split(' ').slice(1),
-    emotes = msg.content.match(/:(.+?):/g),
-    quotelist = jetpack.read('quotes.json', 'json'),
-    cmd
-  if (bot.commands.has(command) && (command !== 'emote' || command !== 'quote') && bot.permitChan.indexOf(msg.channel.id) >= 0) {
-    cmd = bot.commands.get(command)
-  } else if (quotelist[command]) {
-    bot.commands.get('quote').func(msg, command, bot)
-  } else if (emotes) {
-    bot.commands.get('emote').func(msg, emotes, bot)
-  }
-  if (cmd) {
-    if (bot.elevation(msg) >= cmd.data.permissions) {
-      cmd.func(msg, args, bot)
-    } else {
-      msg.reply(':newspaper2: You don\'t have permission to use this command.')
-    }
-  }
-})
+bot.on('ready', async () => {
+	log.info(chalk.green(`Connected to Discord gateway & ${bot.guilds.size} guilds.`));
+	bot.user.setGame('ocel help');
+	[bot.commands, bot.watchers] = await Promise.all([bot.loadCmds(bot), bot.loadWatchers(bot)]);
+	bot.guilds.keyArray().forEach(async id => {
+		const guild = bot.guilds.get(id);
+		await Server.sync();
+		const server = await Server.findOne({
+			where: {
+				guildId: id
+			}
+		});
+		if (server) {
+			if (server.emotes === null && server.quotes === null) {
+				log.info(`${server.name} has not been set up properly. Make sure it is set up correctly to enable all functionality.`);
+			}
+		} else {
+			const server = await Server.create({
+				guildId: id,
+				name: guild.name,
+				permitChan: [],
+				perm3: [],
+				perm2: [],
+				perm1: []
+			});
+			log.info(`${server.name} has not been set up properly. Make sure it is set up correctly to enable all functionality.`);
+		}
+	});
+	// Bot.emotes = bot.commands.get('emote').refreshEmoteCache();
+});
 
-bot.on('error', console.error)
-bot.on('warn', console.warn)
+bot.on('message', async msg => {
+	try {
+		if (msg.author.id === bot.user.id || msg.author.bot || !msg.guild) {
+			return;
+		}
+		msg.server = await Server.findOne({
+			where: {
+				guildId: msg.guild.id
+			}
+		});
+		let command;
+		let args;
+		let emotes;
+		let quotelist;
+		const notCommand = [config.prefix, msg.server.altPrefix, `<@${bot.user.id}>`, `<@!${bot.user.id}>`].every(prefix => {
+			if (msg.content.toLowerCase().startsWith(prefix)) {
+				command = msg.content.slice(prefix.length).trim().split(' ')[0];
+				args = msg.content.slice(prefix.length).trim().split(' ').slice(1);
+				if (msg.server.quotes && prefix === msg.server.altPrefix) {
+					quotelist = jetpack.read('quotes.json', 'json');
+				}
+				return false;
+			}
+			return true;
+		});
+		// Log.verbose(`${msg.author.username}#${msg.author.discriminator}: notCommand: ${notCommand}`);
+		if (msg.content.match(/:(.+?):/g) && msg.server.emotes) {
+			emotes = msg.content.match(/:(.+?):/g);
+		} else if (notCommand) {
+			return;
+		}
+		let cmd;
+		const elevation = await bot.elevation(msg);
+		if (bot.commands.has(command) && (command !== 'emote' && command !== 'quote')) {
+			cmd = bot.commands.get(command);
+		} else if (emotes) {
+			bot.commands.get('emote').func(msg, emotes);
+		} else if (quotelist ? quotelist[msg.guild.id][command] : false) {
+			bot.commands.get('quote').func(msg, command, bot);
+		}
+		if (cmd &&
+			(cmd.data.anywhere || elevation >= 3 || msg.server.permitChan.includes(msg.channel.id)) &&
+			(!cmd.data.asOnly || msg.guild.id === '263785005333872640') &&
+			(cmd.data.group === 'emotes' ? msg.server.emotes : true) &&
+			(cmd.data.group === 'quotes' ? msg.server.quotes : true)) {
+			if (elevation >= cmd.data.permissions) {
+				cmd.func(msg, args, bot);
+			} else {
+				msg.reply(':newspaper2: You don\'t have permission to use this command.');
+			}
+		}
+	} catch (err) {
+		log.error(`Something went wrong when handling a message: ${err}`);
+	}
+});
 
-process.on('unhandledRejection', (err) => {
-  bot.log(chalk.red(`Uncaught Promise Error: \n${err.stack}`))
-})
+bot.on('error', console.error);
+bot.on('warn', console.warn);
 
-bot.login(config.token)
+process.on('unhandledRejection', err => {
+	log.error(`Uncaught Promise Error: \n${err.stack}`);
+});
+
+bot.login(config.token);
 
 bot.reload = function (command) {
-  return new Promise((resolve, reject) => {
-    try {
-      delete require.cache[require.resolve(`./cmds/${command}.js`)]
-      const cmd = require(`./cmds/${command}.js`)
-      bot.commands.delete(command)
-      bot.commands.set(command, cmd)
-      resolve()
-    } catch (e) {
-      reject(e)
-    }
-  })
-}
+	return new Promise((resolve, reject) => {
+		try {
+			delete require.cache[require.resolve(`./cmds/${command}.js`)];
+			const cmd = require(`./cmds/${command}.js`);
+			bot.commands.delete(command);
+			bot.commands.set(command, cmd);
+			resolve();
+		} catch (err) {
+			reject(err);
+		}
+	});
+};
 
 bot.enable = function (command) {
-  return new Promise((resolve, reject) => {
-    try {
-      const cmd = require(`./cmds/${command}.js`)
-      bot.commands.set(command, cmd)
-      resolve()
-    } catch (e) {
-      reject(e)
-    }
-  })
-}
+	return new Promise((resolve, reject) => {
+		try {
+			const cmd = require(`./cmds/${command}.js`);
+			bot.commands.set(command, cmd);
+			resolve();
+		} catch (err) {
+			reject(err);
+		}
+	});
+};
 
 bot.disable = function (command) {
-  return new Promise((resolve, reject) => {
-    try {
-      delete require.cache[require.resolve(`./cmds/${command}.js`)]
-      bot.commands.delete(command)
-      resolve()
-    } catch (e) {
-      reject(e)
-    }
-  })
-}
+	return new Promise((resolve, reject) => {
+		try {
+			delete require.cache[require.resolve(`./cmds/${command}.js`)];
+			bot.commands.delete(command);
+			resolve();
+		} catch (err) {
+			reject(err);
+		}
+	});
+};
 
-bot.elevation = function (msg) {
-  if (msg.author.id === config.ownerID) return 4
-  let modRole = msg.guild.roles.find('name', 'Moderator')
-  let staffRole = msg.guild.roles.find('name', 'A&S')
-  let adminRole = msg.guild.roles.find('name', 'Puppet Master')
-  if ((adminRole || staffRole || adminRole) && (msg.member.roles.has(modRole.id) || msg.member.roles.has(staffRole.id) || msg.member.roles.has(adminRole.id))) return 3
-  let arcRole = msg.guild.roles.find('name', 'Archivist')
-  if (arcRole && msg.member.roles.has(arcRole.id)) return 2
-  return 0
-}
+bot.watcherEnable = function (watcher, watcherData) {
+	return new Promise((resolve, reject) => {
+		try {
+			const watchProps = require(`./watchers/${watcher}.js`);
+			bot.watchers.set(watcher, watchProps);
+			bot.watchers.get(watcher).watcher(bot);
+			watcherData[watcher].enable = true;
+			jetpack.write('/home/matt/mattBot/watcherData.json', watcherData);
+			resolve();
+		} catch (err) {
+			reject(err);
+		}
+	});
+};
 
-bot.delReply = function (msg, message, duration) {
-  duration = duration || 5000
-  msg.reply(message).then((m) => {
-    msg.delete(duration)
-    m.delete(duration)
-  })
-}
+bot.watcherDisable = function (watcher, watcherData) {
+	return new Promise((resolve, reject) => {
+		try {
+			bot.watchers.get(watcher).disable();
+			watcherData[watcher].enable = false;
+			jetpack.write('/home/matt/mattBot/watcherData.json', watcherData);
+			delete require.cache[require.resolve(`./watchers/${watcher}.js`)];
+			bot.watchers.delete(watcher);
+			resolve();
+		} catch (err) {
+			reject(err);
+		}
+	});
+};
+
+bot.watcherReload = function (watcher) {
+	return new Promise((resolve, reject) => {
+		try {
+			bot.watchers.get(watcher).disable();
+			delete require.cache[require.resolve(`./watchers/${watcher}.js`)];
+			bot.watchers.delete(watcher);
+			const watchProps = require(`./watchers/${watcher}.js`);
+			bot.watchers.set(watcher, watchProps);
+			bot.watchers.get(watcher).watcher(bot);
+			resolve();
+		} catch (err) {
+			reject(err);
+		}
+	});
+};
+
+bot.elevation = msg => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			if (msg.author.id === config.ownerID) {
+				resolve(4);
+			}
+			const server = await Server.findOne({
+				where: {
+					guildId: msg.guild.id
+				}
+			});
+			server.perm3.forEach(id => {
+				if (msg.member.roles.has(id)) {
+					resolve(3);
+				}
+			});
+			server.perm2.forEach(id => {
+				if (msg.member.roles.has(id)) {
+					resolve(2);
+				}
+			});
+			server.perm1.forEach(id => {
+				if (msg.member.roles.has(id)) {
+					resolve(1);
+				}
+			});
+			resolve(0);
+		} catch (err) {
+			reject(err);
+		}
+	});
+};
