@@ -1,16 +1,21 @@
+// ==== Import modules ====
+// External modules
 const Discord = require('discord.js');
 const jetpack = require('fs-jetpack');
 const chalk = require('chalk');
+// Database modules
 const Database = require('./lib/db');
-const log = require('./lib/log')('Core');
 const Server = require('./lib/models/server');
+const Watcher = require('./lib/models/watcher');
+// Logging module
+const log = require('./lib/log')('Core');
+// Import of bot config
 const config = require('./config.json');
 
+// ==== Initialisation ====
 const bot = new Discord.Client();
 bot.db = Database.start();
-
-bot.permitChan = config.activeChannels;
-
+// Function to load commands into bot
 bot.loadCmds = () => {
 	return new Promise((resolve, reject) => {
 		try {
@@ -34,39 +39,42 @@ bot.loadCmds = () => {
 		}
 	});
 };
-
+// Function to load watchers into bot
 bot.loadWatchers = bot => {
-	return new Promise((resolve, reject) => {
+	return new Promise(async (resolve, reject) => {
 		try {
 			const watchers = new Discord.Collection();
 			const watcherList = jetpack.list('./watchers/');
-			const watcherData = jetpack.read('/home/matt/mattBot/watcherData.json', 'json');
 			const loadedList = [];
 			const skippedList = [];
-			watcherList.forEach(f => {
-				try {
-					const props = require(`./watchers/${f}`);
-					if (typeof watcherData[props.data.command] !== 'object') {
-						watcherData[props.data.command] = {
-							enable: true
-						};
+			await Watcher.sync();
+			await new Promise((resolve, reject) => {
+				watcherList.forEach(async f => {
+					try {
+						const props = require(`./watchers/${f}`);
+						await Watcher.sync();
+						let watcher = await Watcher.findOne({where: {watcherName: props.data.command}});
+						if (!watcher) {
+							watcher = await Watcher.create({
+								watcherName: props.data.command,
+								globalEnable: true,
+								disabledGuilds: []
+							});
+						}
+						if (watcher.globalEnable) {
+							log.verbose(`Loading Watcher: ${props.data.name}. 👌`);
+							loadedList.push(props.data.name);
+							watchers.set(props.data.command, props);
+							props.watcher(bot);
+						} else {
+							log.verbose(`Skipped loading ${props.data.name} as it is disabled. ❌`);
+							skippedList.push(props.data.name);
+						}
+					} catch (err) {
+						reject(err);
 					}
-					if (typeof watcherData[props.data.command].enable !== 'boolean') {
-						watcherData[props.data.command].enable = true;
-					}
-					jetpack.write('/home/matt/mattBot/watcherData.json', watcherData);
-					if (watcherData[props.data.command].enable === true) {
-						log.verbose(`Loading Watcher: ${props.data.name}. 👌`);
-						loadedList.push(props.data.name);
-						watchers.set(props.data.command, props);
-						props.watcher(bot);
-					} else {
-						log.verbose(`Skipped loading ${props.data.name} as it is disabled. ❌`);
-						skippedList.push(props.data.name);
-					}
-				} catch (err) {
-					reject(err);
-				}
+					resolve();
+				});
 			});
 			log.info(chalk.green(`Loaded ${loadedList.length} watcher(s) (${loadedList.join(', ')}) and skipped ${skippedList.length} (${skippedList.join(', ')}).`));
 			resolve(watchers);
@@ -77,33 +85,37 @@ bot.loadWatchers = bot => {
 };
 
 bot.on('ready', async () => {
-	log.info(chalk.green(`Connected to Discord gateway & ${bot.guilds.size} guilds.`));
-	bot.user.setGame('ocel help');
-	[bot.commands, bot.watchers] = await Promise.all([bot.loadCmds(bot), bot.loadWatchers(bot)]);
-	bot.guilds.keyArray().forEach(async id => {
-		const guild = bot.guilds.get(id);
-		await Server.sync();
-		const server = await Server.findOne({
-			where: {
-				guildId: id
-			}
-		});
-		if (server) {
-			if (server.emotes === null && server.quotes === null) {
+	try {
+		log.info(chalk.green(`Connected to Discord gateway & ${bot.guilds.size} guilds.`));
+		bot.user.setGame('ocel help');
+		[bot.commands, bot.watchers] = await Promise.all([bot.loadCmds(bot), bot.loadWatchers(bot)]);
+		bot.guilds.keyArray().forEach(async id => {
+			const guild = bot.guilds.get(id);
+			await Server.sync();
+			const server = await Server.findOne({
+				where: {
+					guildId: id
+				}
+			});
+			if (server) {
+				if (server.emotes === null && server.quotes === null) {
+					log.info(`${server.name} has not been set up properly. Make sure it is set up correctly to enable all functionality.`);
+				}
+			} else {
+				const server = await Server.create({
+					guildId: id,
+					name: guild.name,
+					permitChan: [],
+					perm3: [],
+					perm2: [],
+					perm1: []
+				});
 				log.info(`${server.name} has not been set up properly. Make sure it is set up correctly to enable all functionality.`);
 			}
-		} else {
-			const server = await Server.create({
-				guildId: id,
-				name: guild.name,
-				permitChan: [],
-				perm3: [],
-				perm2: [],
-				perm1: []
-			});
-			log.info(`${server.name} has not been set up properly. Make sure it is set up correctly to enable all functionality.`);
-		}
-	});
+		});
+	} catch (err) {
+		log.error(`Error in bot initialisation: ${err}`);
+	}
 	// Bot.emotes = bot.commands.get('emote').refreshEmoteCache();
 });
 
@@ -211,13 +223,12 @@ bot.disable = function (command) {
 };
 
 bot.watcherEnable = function (watcher, watcherData) {
-	return new Promise((resolve, reject) => {
+	return new Promise(async (resolve, reject) => {
 		try {
 			const watchProps = require(`./watchers/${watcher}.js`);
 			bot.watchers.set(watcher, watchProps);
 			bot.watchers.get(watcher).watcher(bot);
-			watcherData[watcher].enable = true;
-			jetpack.write('/home/matt/mattBot/watcherData.json', watcherData);
+			await watcherData.update({globalEnable: true});
 			resolve();
 		} catch (err) {
 			reject(err);
@@ -226,11 +237,10 @@ bot.watcherEnable = function (watcher, watcherData) {
 };
 
 bot.watcherDisable = function (watcher, watcherData) {
-	return new Promise((resolve, reject) => {
+	return new Promise(async (resolve, reject) => {
 		try {
 			bot.watchers.get(watcher).disable();
-			watcherData[watcher].enable = false;
-			jetpack.write('/home/matt/mattBot/watcherData.json', watcherData);
+			await watcherData.update({globalEnable: false});
 			delete require.cache[require.resolve(`./watchers/${watcher}.js`)];
 			bot.watchers.delete(watcher);
 			resolve();

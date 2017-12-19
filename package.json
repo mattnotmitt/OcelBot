@@ -67,7 +67,7 @@
             ],
             "complexity": [
                 "error",
-                25
+                50
             ],
             "no-await-in-loop": [
                 "off",

@@ -29,7 +29,7 @@ exports.func = async msg => {
 		log.verbose(`${msg.member.displayName} (${msg.author.username}#${msg.author.discriminator}) has been removed from duty in #${msg.channel.name} on ${msg.guild.name}.`);
 	} else {
 		msg.member.addRole(dutyRole);
-		msg.reply(`You are now on duty - users will be able to ping you and other agents with this role to ask for help.`, 10000);
+		msg.reply(`You are now on duty - users will be able to ping you and other agents with this role to ask for help.`);
 		log.verbose(`${msg.member.displayName} (${msg.author.username}#${msg.author.discriminator}) has gone on duty in #${msg.channel.name} on ${msg.guild.name}.`);
 	}
 };
