@@ -23,7 +23,7 @@ exports.func = async (msg, args, bot) => {
 	}
 	const emotes = new Discord.RichEmbed({
 		title: msg.server.sister ? `__Emotes in ${msg.guild.name} (Sister server of ${bot.guilds.get(guildId).name})__` : `__Emotes in ${msg.guild.name}__`,
-		// Description: `The available emotes on this server can be viewed at https://ocel.artemisbot.uk/emotes/${guildId}`,
+		description: `The available emotes on this server can be viewed at https://ocel.artemisbot.uk/emotes/list/${guildId}`,
 		color: 2212073
 	});
 	for (const emote of guildEmotes) {
@@ -32,7 +32,7 @@ exports.func = async (msg, args, bot) => {
 	const dm = await msg.author.createDM();
 	dm.send('', {
 		embed: emotes
-	}).then(() => msg.reply('I have DMed you with the avaliable emotes in this server.')).catch(err => {
+	}).then(() => msg.reply(`The available emotes on this server can be viewed at https://ocel.artemisbot.uk/emotes/list/${guildId}\nI have also DMed you with a list of these emotes.`)).catch(err => {
 		log.error(`Could not DM user: ${err}.`);
 		msg.reply(`I could not DM you, please check your settings.`);
 	});

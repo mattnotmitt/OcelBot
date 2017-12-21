@@ -10,7 +10,14 @@ exports.data = {
 
 const log = require('../lib/log.js')(exports.data.name);
 
-exports.func = async (msg, args, bot) => {
+const clean = text => {
+	if (typeof text === 'string') {
+		return text.replace(/`/g, '`' + String.fromCharCode(8203)).replace(/@/g, '@' + String.fromCharCode(8203));
+	}
+	return text;
+};
+
+exports.func = async (msg, args) => {
 	log.info(`${msg.member.displayName} (${msg.author.username}#${msg.author.discriminator}) has used eval in #${msg.channel.name} on ${msg.guild.name}.`);
 	const code = args.join(' ');
 	try {
@@ -18,15 +25,8 @@ exports.func = async (msg, args, bot) => {
 		if (typeof evaled !== 'string') {
 			evaled = require('util').inspect(evaled);
 		}
-		await msg.channel.send('```xl\n' + clean(evaled) + '\n```').catch(e => log.error(e));
+		await msg.channel.send('```xl\n' + clean(evaled) + '\n```').catch(err => log.error(err));
 	} catch (err) {
-		await msg.channel.send('`ERROR` ```xl\n' + clean(err) + '\n```').catch(e => log.error(e));
+		await msg.channel.send('`ERROR` ```xl\n' + clean(err) + '\n```').catch(err => log.error(err));
 	}
 };
-
-function clean(text) {
-	if (typeof text === 'string') {
-		return text.replace(/`/g, '`' + String.fromCharCode(8203)).replace(/@/g, '@' + String.fromCharCode(8203));
-	}
-	return text;
-}

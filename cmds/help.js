@@ -42,7 +42,9 @@ exports.func = async (msg, args, bot) => {
 			cmdData = bot.commands.get(spec).data;
 			if (elevation < cmdData.permissions) {
 				return msg.reply('You do not have permissions to view this command.');
-			} else if (!cmdData.asOnly || msg.guild.id === '263785005333872640') {
+			} else if (!((!cmdData.asOnly || msg.guild.id === '263785005333872640') &&
+			(cmdData.group === 'emotes' ? server.emotes : true) &&
+			(cmdData.group === 'quotes' ? server.quotes : true))) {
 				return msg.reply('This command is not enabled in your server.');
 			}
 			help.setTitle(`__${cmdData.name} Command__`);

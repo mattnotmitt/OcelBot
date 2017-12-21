@@ -3,18 +3,29 @@
 const Discord = require('discord.js');
 const jetpack = require('fs-jetpack');
 const chalk = require('chalk');
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
 // Database modules
 const Database = require('./lib/db');
 const Server = require('./lib/models/server');
 const Watcher = require('./lib/models/watcher');
 // Logging module
 const log = require('./lib/log')('Core');
-// Import of bot config
-const config = require('./config.json');
-
+const OcelAPI = require('./lib/ocel-api');
 // ==== Initialisation ====
 const bot = new Discord.Client();
+
+bot.config = require('./config.json');
+
 bot.db = Database.start();
+
+bot.router = express();
+bot.router.use(bodyParser.json());
+bot.router.use(cors());
+OcelAPI(bot.router);
+bot.router.listen(12000, () => log.info('Express router listening on port 12000.'));
+
 // Function to load commands into bot
 bot.loadCmds = () => {
 	return new Promise((resolve, reject) => {
@@ -133,7 +144,7 @@ bot.on('message', async msg => {
 		let args;
 		let emotes;
 		let quotelist;
-		const notCommand = [config.prefix, msg.server.altPrefix, `<@${bot.user.id}>`, `<@!${bot.user.id}>`].every(prefix => {
+		const notCommand = [bot.config.prefix, msg.server.altPrefix, `<@${bot.user.id}>`, `<@!${bot.user.id}>`].every(prefix => {
 			if (msg.content.toLowerCase().startsWith(prefix)) {
 				command = msg.content.slice(prefix.length).trim().split(' ')[0];
 				args = msg.content.slice(prefix.length).trim().split(' ').slice(1);
@@ -182,9 +193,9 @@ process.on('unhandledRejection', err => {
 	log.error(`Uncaught Promise Error: \n${err.stack}`);
 });
 
-bot.login(config.token);
+bot.login(bot.config.token);
 
-bot.reload = function (command) {
+bot.reload = command => {
 	return new Promise((resolve, reject) => {
 		try {
 			delete require.cache[require.resolve(`./cmds/${command}.js`)];
@@ -198,7 +209,7 @@ bot.reload = function (command) {
 	});
 };
 
-bot.enable = function (command) {
+bot.enable = command => {
 	return new Promise((resolve, reject) => {
 		try {
 			const cmd = require(`./cmds/${command}.js`);
@@ -210,7 +221,7 @@ bot.enable = function (command) {
 	});
 };
 
-bot.disable = function (command) {
+bot.disable = command => {
 	return new Promise((resolve, reject) => {
 		try {
 			delete require.cache[require.resolve(`./cmds/${command}.js`)];
@@ -222,7 +233,7 @@ bot.disable = function (command) {
 	});
 };
 
-bot.watcherEnable = function (watcher, watcherData) {
+bot.watcherEnable = (watcher, watcherData) => {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const watchProps = require(`./watchers/${watcher}.js`);
@@ -236,7 +247,7 @@ bot.watcherEnable = function (watcher, watcherData) {
 	});
 };
 
-bot.watcherDisable = function (watcher, watcherData) {
+bot.watcherDisable = (watcher, watcherData) => {
 	return new Promise(async (resolve, reject) => {
 		try {
 			bot.watchers.get(watcher).disable();
@@ -250,7 +261,7 @@ bot.watcherDisable = function (watcher, watcherData) {
 	});
 };
 
-bot.watcherReload = function (watcher) {
+bot.watcherReload = watcher => {
 	return new Promise((resolve, reject) => {
 		try {
 			bot.watchers.get(watcher).disable();
@@ -269,7 +280,7 @@ bot.watcherReload = function (watcher) {
 bot.elevation = msg => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			if (msg.author.id === config.ownerID) {
+			if (msg.author.id === bot.config.ownerID) {
 				resolve(4);
 			}
 			const server = await Server.findOne({

@@ -79,10 +79,10 @@ exports.func = async (msg, args) => {
 				});
 				try {
 					if (songData['@attr'].nowplaying) {
-						embed.setAuthor(`Now playing on last.fm for ${user}`, 'https://freeiconshop.com/wp-content/uploads/edd/lastfm-flat.png', `https://last.fm/user/${user}`);
+						embed.setAuthor(`Now playing on last.fm for ${user}`, 'https://i.imgur.com/HJJhawB.png', `https://last.fm/user/${user}`);
 					}
 				} catch (err) {
-					embed.setAuthor(`Last played on last.fm for ${user}`, 'https://freeiconshop.com/wp-content/uploads/edd/lastfm-flat.png', `https://last.fm/user/${user}`);
+					embed.setAuthor(`Last played on last.fm for ${user}`, 'https://i.imgur.com/HJJhawB.png', `https://last.fm/user/${user}`);
 				}
 				log.debug('Created embed data.');
 				msg.channel.stopTyping(true);
