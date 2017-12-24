@@ -207,7 +207,7 @@ exports.watcher = bot => {
 	startServer(bot);
 	// Refresh webhooks every 24 hours
 	repeat = setInterval(() => {
-		renewWebhooks();
+		renewWebhooks(bot);
 	}, 86400 * 1000);
 	log.verbose(`${exports.data.name} has initialised successfully.`);
 };

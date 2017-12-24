@@ -25,11 +25,11 @@ exports.func = async msg => {
 		}
 		const dutyRole = msg.guild.roles.find('name', 'Active Agent');
 		if (msg.member.roles.has(dutyRole.id)) {
-			msg.member.removeRole(dutyRole);
+			await msg.member.removeRole(dutyRole);
 			msg.reply(`"Active Agent" role has been removed, thank you for your help!`);
 			log.verbose(`${msg.member.displayName} (${msg.author.username}#${msg.author.discriminator}) has been removed from duty in #${msg.channel.name} on ${msg.guild.name}.`);
 		} else {
-			msg.member.addRole(dutyRole);
+			await msg.member.addRole(dutyRole);
 			msg.reply(`You are now on duty - users will be able to ping you and other agents with this role to ask for help.`);
 			log.verbose(`${msg.member.displayName} (${msg.author.username}#${msg.author.discriminator}) has gone on duty in #${msg.channel.name} on ${msg.guild.name}.`);
 		}

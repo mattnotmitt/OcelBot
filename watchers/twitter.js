@@ -26,7 +26,6 @@ const getFollowList = watchers => {
 			follow.push(watch.twitterID);
 		}
 	});
-	console.log(follow.join(', '));
 	return follow.join(', ');
 };
 

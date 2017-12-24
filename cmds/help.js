@@ -36,7 +36,7 @@ exports.func = async (msg, args, bot) => {
 	try {
 		if (spec) {
 			if (!bot.commands.has(spec)) {
-				return msg.reply(msg, 'The specified command does not exist.');
+				return msg.reply('The specified command does not exist.');
 			}
 			log.verbose(`${msg.member.displayName} (${msg.author.username}#${msg.author.discriminator}) has requested additional info on !${spec} in #${msg.channel.name} on ${msg.guild.name}.`);
 			cmdData = bot.commands.get(spec).data;

@@ -3,9 +3,6 @@
 </br>
   <h4>{{ msg }}</h4>
 
-  <div v-for="guild in guilds">
-    <router-link class="forward" :to="{ name: 'EmoteList', params: { guild: guild.guildId }}">{{ guild.name }}</router-link>
-  </div>
   <div id="emotes" v-for="chunk in guilds" class="row">
     <div class="one-third column" v-for="guild in chunk">
       <router-link class="forward" :to="{ name: 'EmoteList', params: { guild: guild.guildId }}">{{ guild.name }}</router-link>
@@ -17,8 +14,6 @@
 </template>
 
 <script>
-import request from 'request-promise-native';
-
 export default {
   name: 'GuildList',
   data() {
@@ -35,10 +30,7 @@ export default {
   methods: {
     fetchData: async function() {
       try {
-        const result = await request({
-          url: `https://ocel.artemisbot.uk/api/guilds/`,
-          json: true
-        });
+        let result = await (await fetch(`https://ocel.artemisbot.uk/api/guilds/`)).json();
         this.guilds = this.$chunk(result.guilds.filter(guild => true), 3);
         this.msg = `Ocel's guilds with emotes enabled`;
 		const diff = 0; //result.guilds.length - this.guilds.length;

@@ -33,6 +33,6 @@ exports.func = async (msg, args, bot) => {
 		embed: quotes
 	}).then(() => msg.reply('I have DMed you with the avaliable quotes in this server.')).catch(err => {
 		log.error(`Could not DM user: ${err}.`);
-		msg.reply(msg, `I could not DM you, please check your settings.`);
+		msg.reply(`I could not DM you, please check your settings.`);
 	});
 };

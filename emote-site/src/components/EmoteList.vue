@@ -6,7 +6,7 @@
   </br>
   <div id="emotes" v-for="chunk in emotes" class="row">
     <div class="one-third column" v-for="emote in chunk">
-      <img class="u-max-full-width" v-bind:src="'https://cdn.artemisbot.uk/emotes/' + emote.path" /></br>
+      <img class="u-max-full-width" v-lazy="'https://cdn.artemisbot.uk/emotes/' + emote.path" /></br>
       <b id="emote-label">{{ emote.name }}</b>
     </div>
   </div>
@@ -17,7 +17,6 @@
 </template>
 
 <script>
-import request from 'request-promise-native';
 export default {
   name: 'EmoteList',
   data() {
@@ -34,10 +33,7 @@ export default {
   methods: {
     fetchData: async function() {
       try {
-        const result = await request({
-          url: `https://ocel.artemisbot.uk/api/emotes/${this.$route.params.guild}`,
-          json: true
-        });
+		let result = await (await fetch(`https://ocel.artemisbot.uk/api/emotes/${this.$route.params.guild}`)).json();
         this.emotes = this.$chunk(result.emotes, 3);
         this.msg = `Emotes from ${result.name}`;
         if (result.status === 1) {
@@ -56,6 +52,10 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
+img[lazy=loading] {
+    max-width: 30%;
+}
+
 .back {
   font-size: 20px;
   text-align: left;
