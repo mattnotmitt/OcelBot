@@ -84,8 +84,8 @@ bot.loadWatchers = bot => {
 					} catch (err) {
 						reject(err);
 					}
-					resolve();
 				});
+				resolve();
 			});
 			log.info(chalk.green(`Loaded ${loadedList.length} watcher(s) (${loadedList.join(', ')}) and skipped ${skippedList.length} (${skippedList.join(', ')}).`));
 			resolve(watchers);
@@ -162,7 +162,10 @@ bot.on('message', async msg => {
 			return;
 		}
 		let cmd;
-		const elevation = await bot.elevation(msg);
+		if (!msg.member) {
+			msg.member = await msg.guild.fetchMember(msg);
+		}
+		msg.elevation = await bot.elevation(msg);
 		if (bot.commands.has(command) && (command !== 'emote' && command !== 'quote')) {
 			cmd = bot.commands.get(command);
 		} else if (emotes) {
@@ -171,11 +174,11 @@ bot.on('message', async msg => {
 			bot.commands.get('quote').func(msg, command, bot);
 		}
 		if (cmd &&
-			(cmd.data.anywhere || elevation >= 3 || msg.server.permitChan.includes(msg.channel.id)) &&
-			(!cmd.data.asOnly || msg.guild.id === '263785005333872640') &&
+			(cmd.data.anywhere || msg.elevation >= 3 || msg.server.permitChan.includes(msg.channel.id)) &&
+			(!cmd.data.asOnly || ['263785005333872640', bot.config.debugServer].includes(msg.guild.id)) &&
 			(cmd.data.group === 'emotes' ? msg.server.emotes : true) &&
 			(cmd.data.group === 'quotes' ? msg.server.quotes : true)) {
-			if (elevation >= cmd.data.permissions) {
+			if (msg.elevation >= cmd.data.permissions) {
 				cmd.func(msg, args, bot);
 			} else {
 				msg.reply(':newspaper2: You don\'t have permission to use this command.');
@@ -277,10 +280,12 @@ bot.watcherReload = watcher => {
 	});
 };
 
-bot.elevation = msg => {
+bot.elevation = (msg, user) => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			if (msg.author.id === bot.config.ownerID) {
+			const impUser = user || msg.author;
+			const impMember = user ? await msg.guild.fetchMember(user.id) : msg.member;
+			if (impUser.id === bot.config.ownerID) {
 				resolve(4);
 			}
 			const server = await Server.findOne({
@@ -289,17 +294,17 @@ bot.elevation = msg => {
 				}
 			});
 			server.perm3.forEach(id => {
-				if (msg.member.roles.has(id)) {
+				if (impMember.roles.has(id)) {
 					resolve(3);
 				}
 			});
 			server.perm2.forEach(id => {
-				if (msg.member.roles.has(id)) {
+				if (impMember.roles.has(id)) {
 					resolve(2);
 				}
 			});
 			server.perm1.forEach(id => {
-				if (msg.member.roles.has(id)) {
+				if (impMember.roles.has(id)) {
 					resolve(1);
 				}
 			});
