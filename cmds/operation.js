@@ -68,9 +68,8 @@ exports.func = async (msg, args) => {
 				const opRole = msg.guild.roles.get(op.roleID);
 				opRole.setMentionable(true).then(async role => {
 					await msg.channel.send(`Attention agents; Operation <@&${role.id}> is complete! You have all been unassigned from duty for this operation.`);
-					await opRole.setMentionable(false);
+					await Promise.all([role.delete(), op.destroy()]);
 				});
-				await Promise.all([opRole.delete(), op.destroy()]);
 				return log.info(`${msg.member.displayName} (${msg.author.username}#${msg.author.discriminator}) has deleted operation ${args[1]} in #${msg.channel.name} on ${msg.guild.name}.`);
 			}
 			return msg.reply(':newspaper2: You don\'t have permission to use this operation command.');

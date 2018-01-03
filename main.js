@@ -59,8 +59,8 @@ bot.loadWatchers = bot => {
 			const loadedList = [];
 			const skippedList = [];
 			await Watcher.sync();
-			await new Promise((resolve, reject) => {
-				watcherList.forEach(async f => {
+			await Promise.all(watcherList.map(f => {
+				return new Promise(async (resolve, reject) => {
 					try {
 						const props = require(`./watchers/${f}`);
 						await Watcher.sync();
@@ -77,16 +77,17 @@ bot.loadWatchers = bot => {
 							loadedList.push(props.data.name);
 							watchers.set(props.data.command, props);
 							props.watcher(bot);
+							resolve(true);
 						} else {
 							log.verbose(`Skipped loading ${props.data.name} as it is disabled. ❌`);
 							skippedList.push(props.data.name);
+							resolve(false);
 						}
 					} catch (err) {
 						reject(err);
 					}
 				});
-				resolve();
-			});
+			}));
 			log.info(chalk.green(`Loaded ${loadedList.length} watcher(s) (${loadedList.join(', ')}) and skipped ${skippedList.length} (${skippedList.join(', ')}).`));
 			resolve(watchers);
 		} catch (err) {
@@ -293,6 +294,9 @@ bot.elevation = (msg, user) => {
 					guildId: msg.guild.id
 				}
 			});
+			if (impMember.hasPermission('ADMINISTRATOR')) {
+				resolve(3);
+			}
 			server.perm3.forEach(id => {
 				if (impMember.roles.has(id)) {
 					resolve(3);

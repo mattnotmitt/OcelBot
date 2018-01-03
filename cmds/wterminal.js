@@ -3,7 +3,7 @@ exports.data = {
 	command: 'wterminal',
 	description: 'Checks value of a Waking Titan terminal commmand.',
 	group: 'WakingTitan',
-	syntax: 'terminal [command]',
+	syntax: 'wterminal [command]',
 	author: 'Matt C: matt@artemisbot.uk',
 	permissions: 0
 };
@@ -49,8 +49,8 @@ exports.func = async (msg, args) => {
 			timestamp: moment().toISOString(),
 			url: 'http://wakingtitan.com'
 		}});
-	} catch (e) {
-		log.error(exports.data.name, `Something went wrong: ${e}`);
+	} catch (err) {
+		log.error(exports.data.name, `Something went wrong: ${err}`);
 		msg.reply('Something\'s gone wrong. <@132479572569620480> check the logs mate.');
 		msg.channel.stopTyping(true);
 	}
@@ -63,8 +63,8 @@ exports.runCommand = (command, params) => {
 			const cookJar = request.jar();
 			cookJar.setCookie(request.cookie('terminal=%5B%22atlas%22%2C%22csd%22%2C%222fee0b5b-6312-492a-8308-e7eec4287495%22%2C%2205190fed-b606-4321-a52e-c1d1b39f2861%22%2C%22f7c05c4f-18a5-47a7-bd8e-804347a15f42%22%5D'), 'http://wakingtitan.com');
 			resolve(await request.post({url: 'http://wakingtitan.com/terminal', json: true, jar: cookJar, form: {command: command.toLowerCase(), 'param[]': params.map(param => param.toLowerCase())}, qsStringifyOptions: {arrayFormat: 'repeat'}}));
-		} catch (e) {
-			reject(e);
+		} catch (err) {
+			reject(err);
 		}
 	});
 };

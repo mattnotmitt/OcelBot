@@ -14,11 +14,11 @@ export default new Router({
         name: 'GuildList',
         component: GuildList
 	},
-	{
+/*	{
 		path: '/emotes/:emote',
         name: 'Emote',
         component: Emote
-	}
+	},*/
     {
       path: '/emotes/list/:guild',
       name: 'EmoteList',

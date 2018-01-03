@@ -16,6 +16,10 @@ const log = require('../lib/log.js')(exports.data.name);
 const LastFMDB = require('../lib/models/lastfm');
 const config = require('../config.json');
 
+const safeLink = link => {
+	return link.replace('(', '%28').replace(')', '%29');
+};
+
 exports.func = async (msg, args) => {
 	try {
 		msg.channel.startTyping();
@@ -56,7 +60,7 @@ exports.func = async (msg, args) => {
 					fields: [
 						{
 							name: 'Song',
-							value: `[${songData.name}](${songData.url})` || 'None',
+							value: `[${songData.name}](${safeLink(songData.url)})` || 'None',
 							inline: true
 						},
 						{
@@ -123,8 +127,65 @@ exports.func = async (msg, args) => {
 **type:** \`albums | artists | tracks (*)\`
 **timescale:** \`overall (*) | 7day | 1month | 3month | 6month | 12month\``);
 				} else {
+					const typeOptions = ['albums', 'artists', 'tracks'];
+					const timescaleOptions = {
+						overall: 'overall',
+						'7day': 'in the past seven days',
+						'1month': 'in the past month',
+						'3month': 'in the past three months',
+						'6month': 'in the past six months',
+						'12month': 'in the past year'
+					};
+					let user = userData.lfmUsername;
+					let type = args[1] || 'tracks';
+					let timescale = args[2] || 'overall';
+					if (!typeOptions.includes(type)) {
+						if ((await r(`&method=user.getinfo&user=${args[1]}`)).message === 'User not found') {
+							msg.channel.stopTyping(true);
+							return msg.reply(`${args[1]} is an invalid user or top 10 type. Please select a valid last.fm user or choose a type from \`${typeOptions.join(' | ')}`);
+						}
+						user = args[1];
+						type = args[2] || 'tracks';
+						if (!typeOptions.includes(type)) {
+							msg.channel.stopTyping(true);
+							return msg.reply(`${type} is an invalid top10 timescale. Please choose one from \`${typeOptions.join(' | ')}\``);
+						}
+						timescale = args[3] || 'overall';
+					}
+					if (!Object.keys(timescaleOptions).includes(timescale)) {
+						msg.channel.stopTyping(true);
+						return msg.reply(`${timescale} is an invalid top10 timescale. Please choose one from \`${Object.keys(timescaleOptions).join(' | ')}\``);
+					}
+					log.debug('Found user.');
+					if ((await r(`&method=user.getinfo&user=${user}`)).message === 'User not found') {
+						msg.channel.stopTyping(true);
+						return msg.reply('Specified user does not exist.');
+					}
+					const top10 = await r(`&method=user.gettop${type}&user=${user}&period=${timescale}&limit=10`);
+					const embed = new Discord.RichEmbed({
+						author: {
+							name: `Top 10 ${type} ${timescaleOptions[timescale]} for ${user}`,
+							icon_url: 'https://i.imgur.com/HJJhawB.png',
+							url: `https://last.fm/user/${user}`
+						},
+						color: 0xD51007,
+						footer: {
+							text: `Powered by the last.fm API. Took ${moment().diff(msg.createdAt)} ms.`
+						}
+					});
+					const goodData = top10[`top${type}`][type.slice(0, -1)];
+					for (const thing of goodData) {
+						const name = type === 'artists' ? `${thing.name}` : `${thing.name} - ${thing.artist.name}`;
+						let inline = true;
+						if (goodData.indexOf(thing) < 9) {
+							const nextName = type === 'artists' ? `${goodData[goodData.indexOf(thing) + 1].name}` : `${goodData[goodData.indexOf(thing) + 1].name} - ${goodData[goodData.indexOf(thing) + 1].artist.name}`;
+							inline = name.length < 30 ? nextName.length < 60 : nextName.length < 40;
+						}
+						// Console.log(inline);
+						embed.addField(name, `[Played ${thing.playcount} ${thing.playcount === 1 ? 'time' : 'times'}](${safeLink(thing.url)})`, inline);
+					}
 					msg.channel.stopTyping(true);
-					await msg.reply('Placeholder; please ignore.');
+					await msg.channel.send('', embed);
 				}
 				break;
 			} case 'help': {

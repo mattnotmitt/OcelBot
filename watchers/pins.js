@@ -12,17 +12,19 @@ exports.watcher = bot => {
   // Startup process for watcher
 	log.info(`${exports.data.name} has initialised successfully.`);
 	bot.on('messageReactionAdd', async (reaction, user) => {
-		if (reaction.emoji.name === '📌' && await bot.elevation(reaction.message, user) >= 2) {
-			if (!reaction.message.pinned) {
-				await reaction.message.pin();
-				await reaction.remove(user);
-				log.verbose(`${(await reaction.message.guild.fetchMember(user.id)).displayName} (${user.username}#${user.discriminator}) has pinned a message using a reaction in #${reaction.message.channel.name} on ${reaction.message.guild.name}.`);
-			}
-		} else if (reaction.emoji.name === '❌' && await bot.elevation(reaction.message, user) >= 2) {
-			if (reaction.message.pinned) {
-				await reaction.message.unpin();
-				await reaction.remove(user);
-				log.verbose(`${(await reaction.message.guild.fetchMember(user.id)).displayName} (${user.username}#${user.discriminator}) has unpinned a message using a reaction in #${reaction.message.channel.name} on ${reaction.message.guild.name}.`);
+		if (reaction.message.channel.type === 'text') {
+			if (reaction.emoji.name === '📌' ? await bot.elevation(reaction.message, user) >= 2 : false) {
+				if (!reaction.message.pinned) {
+					await reaction.message.pin();
+					await reaction.remove(user);
+					log.verbose(`${(await reaction.message.guild.fetchMember(user.id)).displayName} (${user.username}#${user.discriminator}) has pinned a message using a reaction in #${reaction.message.channel.name} on ${reaction.message.guild.name}.`);
+				}
+			} else if (reaction.emoji.name === '❌' ? await bot.elevation(reaction.message, user) >= 2 : false) {
+				if (reaction.message.pinned) {
+					await reaction.message.unpin();
+					await reaction.remove(user);
+					log.verbose(`${(await reaction.message.guild.fetchMember(user.id)).displayName} (${user.username}#${user.discriminator}) has unpinned a message using a reaction in #${reaction.message.channel.name} on ${reaction.message.guild.name}.`);
+				}
 			}
 		}
 	});
