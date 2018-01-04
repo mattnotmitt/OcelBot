@@ -67,7 +67,7 @@ exports.func = async (msg, args) => {
 		],
 		footer: {
 			text: `Powered by YouTube API. Took ${moment().diff(msg.createdAt)} ms.`,
-			icon_url: 'https://artemisbot.uk/i/zrc5j.png'
+			icon_url: 'https://cdn.artemisbot.uk/img/youtube.png'
 		}
 	};
 	msg.channel.send('', {embed})

@@ -87,13 +87,13 @@ const checkGlyphs = async bot => {
 					timestamp: moment().toISOString(),
 					description: 'That\'s good, innit!',
 					footer: {
-						icon_url: 'https://cdn.artemisbot.uk/img/ocel.jpg',
-						text: 'Ocel'
+						icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.jpg',
+						text: 'Watching Titan'
 					},
 					author: {
 						name: 'New glyph has activated!',
 						url: 'https://wakingtitan.com',
-						icon_url: 'http://i.imgur.com/PFQODUN.png'
+						icon_url: 'https://cdn.artemisbot.uk/img/hexagon.jpg'
 					},
 					thumbnail: {
 						url: `http://wakingtitan.com${glyphs.sort()[i]}`
@@ -113,18 +113,17 @@ const checkGlyphs = async bot => {
 				const uploadResult = await T.post('media/upload', {
 					media_data: img.toString('base64')
 				});
-				setTimeout(async () => {
-					const result = await T.post('media/metadata/create', {
-						media_id: uploadResult.data.media_id_string,
-						alt_text: {
-							text: 'Glyph from wakingtitan.com.'
-						}
-					});
-					T.post('statuses/update', {
-						status: 'A new glyph has been activated at wakingtitan.com! #WakingTitan',
-						media_ids: result.data.media_id_string
-					});
-				}, 30 * 1000);
+				await delay(30 * 1000);
+				const result = await T.post('media/metadata/create', {
+					media_id: uploadResult.data.media_id_string,
+					alt_text: {
+						text: 'Glyph from wakingtitan.com.'
+					}
+				});
+				await T.post('statuses/update', {
+					status: 'A new glyph has been activated at wakingtitan.com! #WakingTitan',
+					media_ids: result.data.media_id_string
+				});
 				change = true;
 			}
 		}
@@ -186,11 +185,11 @@ const checkSite = async (site, bot) => {
 				author: {
 					name: `${site.split('/').splice(2).join('/')} has updated`,
 					url: site,
-					icon_url: 'http://i.imgur.com/PFQODUN.png'
+					icon_url: 'https://cdn.artemisbot.uk/img/hexagon.png'
 				},
 				footer: {
-					icon_url: 'https://cdn.artemisbot.uk/img/ocel.jpg',
-					text: 'Ocel'
+					icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.jpg',
+					text: 'Watching Titan'
 				}
 			});
 			jetpack.write(`./watcherData/${data.sites[site]}-temp.html`, body);

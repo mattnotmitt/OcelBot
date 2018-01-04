@@ -36,13 +36,14 @@ exports.func = async (msg, args) => {
 			options.id = userSearch.users[0]._id;
 		} else {
 			return msg.reply('Not a real twitch user.');
-		} msg.channel.stopTyping();
+		}
+		msg.channel.stopTyping();
 	}
 	const stream = (await r(`/streams/${options.id}`)).stream;
-	if (!stream) {
-		channel = await r(`/channels/${options.id}`);
-	} else {
+	if (stream) {
 		channel = stream.channel;
+	} else {
+		channel = await r(`/channels/${options.id}`);
 	}
 	const embed = new Discord.RichEmbed({
 		color: 6570405,
@@ -69,7 +70,7 @@ exports.func = async (msg, args) => {
 			}
 		],
 		footer: {
-			icon_url: 'http://www.newdesignfile.com/postpic/2014/02/twitch-logo_99113.png',
+			icon_url: 'https://cdn.artemisbot.uk/img/twitch.png',
 			text: `Powered by the Twitch API. Took ${moment().diff(msg.createdAt)} ms.`
 		}
 	});

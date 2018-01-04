@@ -83,10 +83,10 @@ exports.func = async (msg, args) => {
 				});
 				try {
 					if (songData['@attr'].nowplaying) {
-						embed.setAuthor(`Now playing on last.fm for ${user}`, 'https://i.imgur.com/HJJhawB.png', `https://last.fm/user/${user}`);
+						embed.setAuthor(`Now playing on last.fm for ${user}`, 'https://cdn.artemisbot.uk/img/lastfm.png', `https://last.fm/user/${user}`);
 					}
 				} catch (err) {
-					embed.setAuthor(`Last played on last.fm for ${user}`, 'https://i.imgur.com/HJJhawB.png', `https://last.fm/user/${user}`);
+					embed.setAuthor(`Last played on last.fm for ${user}`, 'https://cdn.artemisbot.uk/img/lastfm.png', `https://last.fm/user/${user}`);
 				}
 				log.debug('Created embed data.');
 				msg.channel.stopTyping(true);
@@ -165,7 +165,7 @@ exports.func = async (msg, args) => {
 					const embed = new Discord.RichEmbed({
 						author: {
 							name: `Top 10 ${type} ${timescaleOptions[timescale]} for ${user}`,
-							icon_url: 'https://i.imgur.com/HJJhawB.png',
+							icon_url: 'https://cdn.artemisbot.uk/img/lastfm.png',
 							url: `https://last.fm/user/${user}`
 						},
 						color: 0xD51007,

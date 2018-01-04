@@ -11,9 +11,11 @@
   },
   "dependencies": {
     "chart.js": "^2.7.1",
-    "request-promise-native": "^1.0.5",
+    "lodash": "^4.17.4",
+    "request": "^2.83.0",
     "vue": "^2.5.2",
     "vue-chartjs": "^3.0.2",
+    "vue-lazyload": "^1.1.4",
     "vue-router": "^3.0.1"
   },
   "devDependencies": {

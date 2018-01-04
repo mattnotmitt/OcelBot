@@ -38,7 +38,7 @@ exports.func = async (msg, args) => {
 			author: {
 				name: `${profile.response.players[0].personaname} on Steam.`,
 				url: `https://steamcommunity.com/profiles/${id}/`,
-				icon_url: 'https://artemisbot.uk/i/kng7b.png'
+				icon_url: 'https://cdn.artemisbot.uk/img/steam.png'
 			},
 			color: 0x102753,
 			thumbnail: {url: profile.response.players[0].avatarmedium},

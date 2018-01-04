@@ -43,7 +43,7 @@ exports.func = async (msg, args) => {
 			description: message,
 			color: resp.success ? 0x00FC5D : 0xF00404,
 			footer: {
-				icon_url: 'http://i.imgur.com/FYk8lDP.jpg',
+				icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.png',
 				text: 'Waking Titan Terminal'
 			},
 			timestamp: moment().toISOString(),

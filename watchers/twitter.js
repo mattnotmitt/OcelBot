@@ -54,8 +54,8 @@ const startStream = async bot => {
 			description: he.decode(tweet.text),
 			timestamp: (new Date(tweet.created_at)).toISOString(),
 			footer: {
-				text: `|`,
-				icon_url: 'https://artemisbot.uk/i/nb7ko.png'
+				text: `\u200B`,
+				icon_url: 'https://cdn.artemisbot.uk/img/twitter.png'
 			}
 		});
 		watchers = await TwitterWatch.findAll({where: {twitterID: tweet.user.id_str}});

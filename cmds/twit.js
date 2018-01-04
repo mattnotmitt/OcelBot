@@ -49,7 +49,7 @@ exports.func = async (msg, args) => {
 				],
 				footer: {
 					text: `Twitter`,
-					icon_url: 'https://artemisbot.uk/i/nb7ko.png'
+					icon_url: 'https://cdn.artemisbot.uk/img/twitter.png'
 				}
 			});
 			msg.channel.send('', {embed})

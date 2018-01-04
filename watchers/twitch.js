@@ -155,8 +155,8 @@ const startServer = async bot => {
 				thumbnail: {url: req.body.data[0].thumbnail_url.replace('{width}', '320').replace('{height}', '180')},
 				timestamp: moment().toISOString(),
 				footer: {
-					icon_url: 'http://www.newdesignfile.com/postpic/2014/02/twitch-logo_99113.png',
-					text: `|`
+					icon_url: 'https://cdn.artemisbot.uk/img/twitch.png',
+					text: `\u200B`
 				}
 			});
 			twitchWatchers.forEach(async watch => {

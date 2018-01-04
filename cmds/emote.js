@@ -23,19 +23,4 @@ exports.func = async (msg, emotes) => {
 			await EmoteLog.create({logID: uuidv4(), emoteID: emoteData.emoteID, userID: msg.author.id, channelID: msg.channel.id, guildID: msg.guild.id});
 		}
 	});
-	// Bot.emotes = this.refreshEmoteCache();
 };
-
-/*
-Exports.refreshEmoteCache = async () => {
-	const emotes = {};
-	let i = 0;
-	await Emote.sync();
-	(await Emote.all()).forEach(emote => {
-		emotes[emote.guildId] ? emotes[emote.guildId].push(emote.name) : emotes[emote.guildId] = [emote.name];
-		i++;
-	});
-	log.info(`Cached ${i} emotes.`);
-	return emotes;
-};
-*/

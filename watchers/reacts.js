@@ -1,15 +1,15 @@
 // Modules & Initialisation
 
 exports.data = {
-	name: 'Pin Reacts Watcher',
-	command: 'pins',
+	name: 'Reacts Watcher',
+	command: 'reacts',
 	description: 'Waits for a reaction from a user with the correct role with the 📌 emoji.'
 };
 
 const log = require('../lib/log.js')(exports.data.name);
 
 exports.watcher = bot => {
-  // Startup process for watcher
+	// Startup process for watcher
 	log.info(`${exports.data.name} has initialised successfully.`);
 	bot.on('messageReactionAdd', async (reaction, user) => {
 		if (reaction.message.channel.type === 'text') {
@@ -24,6 +24,11 @@ exports.watcher = bot => {
 					await reaction.message.unpin();
 					await reaction.remove(user);
 					log.verbose(`${(await reaction.message.guild.fetchMember(user.id)).displayName} (${user.username}#${user.discriminator}) has unpinned a message using a reaction in #${reaction.message.channel.name} on ${reaction.message.guild.name}.`);
+				}
+			} else if (reaction.emoji.name === '🗑' ? await bot.elevation(reaction.message, user) >= 3 : false) {
+				if (reaction.message.author.id === bot.user.id) {
+					await reaction.message.delete();
+					log.verbose(`${(await reaction.message.guild.fetchMember(user.id)).displayName} (${user.username}#${user.discriminator}) has deleted a message using a reaction in #${reaction.message.channel.name} on ${reaction.message.guild.name}.`);
 				}
 			}
 		}

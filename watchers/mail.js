@@ -7,10 +7,13 @@ exports.data = {
 
 const MailListener = require('mail-listener2');
 const Discord = require('discord.js');
+const Twit = require('twit');
+
 const MailWatch = require('../lib/models/mailwatch');
 const log = require('../lib/log.js')(exports.data.name);
 const config = require('../config.json');
 
+const T = new Twit(config.WTTwitter);
 const ml = new MailListener({
 	username: config.mailUsername,
 	password: config.mailPassword,
@@ -56,16 +59,21 @@ exports.watcher = bot => {
 				const embed = new Discord.RichEmbed({
 					author: {
 						name: `A new email has been received from ${mail.from[0].name}`,
-						icon_url: 'https://cdn.artemisbot.uk/img/ocel.jpg'
+						icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.jpg'
 					},
 					description: `**Subject:** ${mail.subject}`,
 					color: 0x993E4D,
 					footer: {
 						text: 'Sent at',
-						icon_url: 'https://i.imgur.com/hRNXeHB.png'
+						icon_url: 'https://cdn.artemisbot.uk/img/mail.png'
 					},
 					timestamp: mail.date
 				});
+				if (mail.from[0].address === 'info@wakingtitan.com') {
+					await T.post('statuses/update', {
+						status: mail.subject.length <= (216 - mail.from[0].name.length) ? `A new email has been received from ${mail.from[0].name} with subject ${mail.subject}" #WakingTitan` : `A new email has been received from ${mail.from[0].name} with subject "${mail.subject.slice(0, 215 - mail.from[0].name.length)}…" #WakingTitan`
+					});
+				}
 				mailWatchers.forEach(async watch => {
 					// Send embed to watching discord channels
 					bot.channels.get(watch.channelID).send('', {

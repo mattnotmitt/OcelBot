@@ -29,14 +29,15 @@ const checkCommands = async bot => {
 			const embed = new Discord.RichEmbed({
 				author: {
 					name: `The value of the ${watch.command} command has updated.`,
-					icon_url: 'http://i.imgur.com/Xm6m0fr.png',
+					icon_url: 'https://cdn.artemisbot.uk/img/hexagon.png',
 					url: 'http://wakingtitan.com'
 				},
 				title: `**> \`${watch.command}\`**`,
 				description: `\`${statMsg}\``,
 				color: resp.success ? 0x00FC5D : 0xF00404,
 				footer: {
-					text: 'Waking Titan Terminal'
+					text: 'Watching Titan',
+					icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.png'
 				},
 				timestamp: moment().toISOString()
 			});
@@ -57,7 +58,7 @@ exports.watcher = bot => {
 	this.disable();
 	repeat = setInterval(async () => {
 		checkCommands(bot);
-	}, 20 * 1000);
+	}, 30 * 1000);
 	log.verbose(`${exports.data.name} has initialised successfully.`);
 };
 

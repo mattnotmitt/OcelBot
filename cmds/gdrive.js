@@ -68,7 +68,6 @@ exports.func = async (msg, args) => {
 		const embed = new Discord.RichEmbed({
 			author: {
 				name: `Contents of ${folder.parentName}`,
-				icon_url: 'http://i.imgur.com/Xm6m0fr.png',
 				url: folder.parentLink
 			},
 			color: 0x993E4D,
