@@ -13,7 +13,7 @@ const exec = require('child-process-promise').exec;
 const htmlparser = require('htmlparser2');
 const jetpack = require('fs-jetpack');
 const moment = require('moment');
-const request = require('request-promise-native');
+const snek = require('snekfetch');
 const strftime = require('strftime');
 const Twit = require('twit');
 
@@ -51,7 +51,6 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 // Checks status of glyphs on wakingtitan.com
 const checkGlyphs = async bot => {
 	try {
-		await Watcher.sync();
 		const wtSites = await Watcher.findOne({
 			where: {
 				watcherName: 'wt-sites'
@@ -62,9 +61,7 @@ const checkGlyphs = async bot => {
 			sites: {},
 			glyphs: []
 		};
-		const body = await request({
-			url: 'https://wakingtitan.com'
-		});
+		const req = await snek.get('https://wakingtitan.com');
 		const glyphs = [];
 		let change = false;
 		const handler = new htmlparser.DomHandler(error => {
@@ -73,7 +70,7 @@ const checkGlyphs = async bot => {
 			}
 		});
 		const parser = new htmlparser.Parser(handler);
-		parser.write(body);
+		parser.write(req.body);
 		parser.done();
 		const disGlyph = CSSselect('a[class=glyph]', handler.dom);
 		for (const element of disGlyph) {
@@ -87,7 +84,7 @@ const checkGlyphs = async bot => {
 					timestamp: moment().toISOString(),
 					description: 'That\'s good, innit!',
 					footer: {
-						icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.jpg',
+						icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.png',
 						text: 'Watching Titan'
 					},
 					author: {
@@ -104,14 +101,10 @@ const checkGlyphs = async bot => {
 						embed
 					});
 				}
-				const resp = await request({
-					url: `http://wakingtitan.com${glyphs.sort()[i]}`,
-					encoding: null
-				});
-				const img = Buffer.from(resp, 'utf8');
-				jetpack.write(`watcherData/glyphs/glyph${glyphs.sort()[i].split('/').slice(-1)[0]}`, img);
+				const resp = await snek.get(`http://wakingtitan.com${glyphs.sort()[i]}`);
+				jetpack.write(`watcherData/glyphs/glyph${glyphs.sort()[i].split('/').slice(-1)[0]}`, resp.body);
 				const uploadResult = await T.post('media/upload', {
-					media_data: img.toString('base64')
+					media_data: resp.body.toString('base64')
 				});
 				await delay(30 * 1000);
 				const result = await T.post('media/metadata/create', {
@@ -132,14 +125,13 @@ const checkGlyphs = async bot => {
 			wtSites.update({data});
 		}
 	} catch (err) {
-		log.error(exports.data.name, err);
+		log.error(`Failed check for new glyphs: ${err.stack}`);
 	}
 };
 
 const checkSite = async (site, bot) => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			await Watcher.sync();
 			const wtSites = await Watcher.findOne({
 				where: {
 					watcherName: 'wt-sites'
@@ -150,33 +142,27 @@ const checkSite = async (site, bot) => {
 				sites: {},
 				glyphs: []
 			};
-			const cookJar = request.jar();
+			const reqOpts = {headers: {}};
 			if (site === 'https://wakingtitan.com') {
-				cookJar.setCookie(request.cookie('archive=%5B%229b169d05-6b0b-49ea-96f7-957577793bef%22%2C%2267e3b625-39c0-4d4c-9241-e8ec0256b546%22%2C%224e153ce4-0fec-406f-aa90-6ea62e579369%22%2C%227b9bca5c-43ba-4854-b6b7-9fffcf9e2b45%22%2C%222f99ac82-fe56-43ab-baa6-0182fd0ed020%22%2C%22b4631d12-c218-4872-b414-9ac31b6c744e%22%2C%227b34f00f-51c3-4b6c-b250-53dbfaa303ef%22%2C%2283a383e2-f4fc-4d8d-905a-920057a562e7%22%5D'), site);
+				reqOpts.headers.Cookie = 'terminal=%5B%22atlas%22%2C%22csd%22%2C%222fee0b5b-6312-492a-8308-e7eec4287495%22%2C%2205190fed-b606-4321-a52e-c1d1b39f2861%22%2C%22f7c05c4f-18a5-47a7-bd8e-804347a15f42%22%5D; archive=%5B%229b169d05-6b0b-49ea-96f7-957577793bef%22%2C%2267e3b625-39c0-4d4c-9241-e8ec0256b546%22%2C%224e153ce4-0fec-406f-aa90-6ea62e579369%22%2C%227b9bca5c-43ba-4854-b6b7-9fffcf9e2b45%22%2C%222f99ac82-fe56-43ab-baa6-0182fd0ed020%22%2C%22b4631d12-c218-4872-b414-9ac31b6c744e%22%2C%227b34f00f-51c3-4b6c-b250-53dbfaa303ef%22%2C%2283a383e2-f4fc-4d8d-905a-920057a562e7%22%2C%227ed354ba-b03d-4c56-ade9-3655aff45179%22%5D';
 			}
-			const body = await request({
-				url: site,
-				jar: cookJar
-			});
-			const pageCont = clean(body);
+			const req = await snek.get(site, reqOpts); // Req.body is a buffer for unknown reasons
+			const pageCont = clean(req.body.toString());
 			const oldCont = clean(jetpack.read(`./watcherData/${data.sites[site]}-latest.html`));
 			if (pageCont.replace(/\s/g, '').replace(/>[\s]+</g, '><').replace(/"\s+\//g, '"/') === oldCont.replace(/\s/g, '').replace(/>[\s]+</g, '><').replace(/"\s+\//g, '"/')) {
 				log.debug(`No change on ${site}.`);
 				return resolve(hasUpdate[site] = false);
 			}
 			log.verbose(`There's been a possible change on ${site}`);
+			if (hasUpdate[site]) {
+				return resolve(log.warn(`${site} only just had an update, there's probably a bug.`));
+			}
 			await delay(5000);
-			const body2 = await request({
-				url: site,
-				jar: cookJar
-			});
-			const pageCont2 = clean(body2);
+			const req2 = await snek.get(site, reqOpts);
+			const pageCont2 = clean(req2.body.toString());
 			if (pageCont2 !== pageCont) {
 				log.verbose('Update was only temporary. Rejected broadcast protocol.');
 				return resolve(hasUpdate[site] = false);
-			}
-			if (hasUpdate[site]) {
-				resolve(log.verbose('Site only just had an update, there\'s probably a bug.'));
 			}
 			log.info(`Confirmed change on ${site}`);
 			const embed = new Discord.RichEmbed({
@@ -188,11 +174,11 @@ const checkSite = async (site, bot) => {
 					icon_url: 'https://cdn.artemisbot.uk/img/hexagon.png'
 				},
 				footer: {
-					icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.jpg',
+					icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.png',
 					text: 'Watching Titan'
 				}
 			});
-			jetpack.write(`./watcherData/${data.sites[site]}-temp.html`, body);
+			jetpack.write(`./watcherData/${data.sites[site]}-temp.html`, req.body.toString());
 			const res = await exec(`~/.nvm/versions/node/v9.3.0/lib/node_modules/diffchecker/dist/diffchecker.js ./watcherData/${data.sites[site]}-latest.html ./watcherData/${data.sites[site]}-temp.html`, {
 				cwd: '/home/matt/OcelBot'
 			});
@@ -208,6 +194,7 @@ const checkSite = async (site, bot) => {
 			if (site === 'https://wakingtitan.com') {
 				checkGlyphs(bot);
 			}
+
 			await T.post('statuses/update', {
 				status
 			});
@@ -216,13 +203,17 @@ const checkSite = async (site, bot) => {
 					embed
 				});
 			}
-			await request(`https://web.archive.org/save/${site}`);
+			await snek.get(`https://web.archive.org/save/${site}`);
 			jetpack.remove(`./watcherData/${data.sites[site]}-temp.html`);
-			jetpack.write(`./watcherData/${data.sites[site]}-latest.html`, body);
-			jetpack.write(`./watcherData/${data.sites[site]}-logs/${strftime('%F - %H-%M-%S')}.html`, body);
+			jetpack.write(`./watcherData/${data.sites[site]}-latest.html`, req.body.toString());
+			jetpack.write(`./watcherData/${data.sites[site]}-logs/${strftime('%F - %H-%M-%S')}.html`, req.body.toString());
 			return resolve(hasUpdate[site] = true);
 		} catch (err) {
-			log.error(`Failed to check site ${site}: ${err}`);
+			if (err.status) {
+				log.error(`Failed to check site ${site}. ${err.status}: ${err.statusText}`);
+			} else {
+				log.error(`Failed to check site ${site}: ${err.stack}`);
+			}
 			return reject(err);
 		}
 	});
@@ -243,8 +234,19 @@ const querySites = async bot => {
 	};
 	try {
 		await Promise.all(Object.keys(data.sites).map(site => checkSite(site, bot)));
+		repeat = setTimeout(async () => {
+			querySites(bot);
+		}, 30 * 1000);
 	} catch (err) {
-		log.error(`Failed to query sites: ${err}`);
+		if (err.status) {
+			log.warn(`Failed to access a site. Will retry in 30 seconds.`);
+			repeat = setTimeout(async () => {
+				querySites(bot);
+			}, 30 * 1000);
+		} else {
+			log.error(`Site query failed. ${exports.data.name} has been disabled for safety.`);
+			bot.channels.get('338712920466915329').send(`Site query failed, ${exports.data.name} disabled.`);
+		}
 	}
 };
 
@@ -253,9 +255,9 @@ exports.watcher = async bot => {
 	// In case of restarting this watcher, kill all loops
 	this.disable();
 	log.verbose(chalk.green(`${exports.data.name} has initialised successfully.`));
-	repeat = setInterval(async () => {
+	repeat = setTimeout(async () => {
 		querySites(bot);
-	}, 30 * 1000); // Repeat every 30 seconds
+	}, 30 * 1000); // Do this after 30 seconds (not an interval because the bot sets a new timeout when previous execution is complete)
 };
 
 exports.start = async (msg, bot, args) => {
@@ -282,7 +284,7 @@ exports.start = async (msg, bot, args) => {
 			return msg.reply('Already watching a site with this alias.');
 		}
 		try {
-			const body = await request(args[0]);
+			const body = await snek.get(args[0]);
 			jetpack.write(`./watcherData/${args[1]}-latest.html`, body);
 			jetpack.write(`./watcherData/${args[1]}-logs/${strftime('%F - %H-%M-%S')}.html`, body);
 			data.sites[args[0]] = args[1];
@@ -303,5 +305,5 @@ exports.start = async (msg, bot, args) => {
 };
 
 exports.disable = () => {
-	clearInterval(repeat);
+	clearTimeout(repeat);
 };

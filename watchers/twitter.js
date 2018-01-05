@@ -43,7 +43,6 @@ const startStream = async bot => {
 		log.verbose('Connected to Twitter stream API.');
 	});
 	botStream.on('tweet', async tweet => {
-		await TwitterWatch.sync();
 		const embed = new Discord.RichEmbed({
 			color: 0x00ACED,
 			author: {
@@ -111,7 +110,7 @@ exports.start = async (msg, bot, args) => {
 		});
 		log.info(`Now watching ${name} in #${msg.channel.name} on ${msg.guild.name}.`);
 		await msg.reply(`I am now watching ${name} in this channel.`);
-		this.startServer(bot);
+		this.startStream(bot);
 	} catch (err) {
 		msg.reply('Couldn\'t watch this user! Check the logs.');
 		log.error(`Couldn't start watching a new user: ${err}`);
@@ -142,7 +141,7 @@ exports.stop = async (msg, bot, args) => {
 		await watch.destroy();
 		log.info(`No longer watching ${args[0]} in #${msg.channel.name} on ${msg.guild.name}.`);
 		await msg.reply(`I am no longer watching ${args[0]} in this channel.`);
-		this.startServer(bot);
+		this.startStream(bot);
 	} catch (err) {
 		msg.reply('Couldn\'t stop watching this user! Check the logs.');
 		log.error(`Couldn't stop watching a user: ${err}`);

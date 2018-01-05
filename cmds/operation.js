@@ -33,7 +33,7 @@ const Operation = require('../lib/models/operation');
 const log = require('../lib/log.js')(exports.data.name);
 
 exports.func = async (msg, args) => {
-	Operation.sync();
+	await Operation.sync();
 	switch (args[0]) {
 		case ('create'): {
 			if (msg.elevation >= 3) {

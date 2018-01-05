@@ -59,7 +59,7 @@ exports.watcher = bot => {
 				const embed = new Discord.RichEmbed({
 					author: {
 						name: `A new email has been received from ${mail.from[0].name}`,
-						icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.jpg'
+						icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.png'
 					},
 					description: `**Subject:** ${mail.subject}`,
 					color: 0x993E4D,
