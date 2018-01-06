@@ -133,7 +133,7 @@ bot.on('ready', async () => {
 			}
 		});
 	} catch (err) {
-		log.error(`Error in bot initialisation: ${err}`);
+		log.error(`Error in bot initialisation: ${err.stack}`);
 	}
 });
 
@@ -200,7 +200,7 @@ bot.on('message', async msg => {
 			}
 		}
 	} catch (err) {
-		log.error(`Something went wrong when handling a message: ${err}`);
+		log.error(`Something went wrong when handling a message: ${err.stack}`);
 	}
 });
 
@@ -329,7 +329,7 @@ bot.watcherEnable = (watcher, watcherData) => {
 bot.watcherDisable = (watcher, watcherData) => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			bot.watchers.get(watcher).disable(); // Disable watcher's function
+			bot.watchers.get(watcher).disable(bot); // Disable watcher's function
 			await watcherData.update({globalEnable: false}); // Set watcher to disabled in database
 			delete require.cache[require.resolve(`./watchers/${watcher}.js`)]; // Delete watcher from cache
 			bot.watchers.delete(watcher); // Delete from bot's collection of watchers
@@ -349,7 +349,7 @@ bot.watcherDisable = (watcher, watcherData) => {
 bot.watcherReload = watcher => {
 	return new Promise((resolve, reject) => {
 		try {
-			bot.watchers.get(watcher).disable(); // Disable watcher's function
+			bot.watchers.get(watcher).disable(bot); // Disable watcher's function
 			delete require.cache[require.resolve(`./watchers/${watcher}.js`)]; // Delete watcher from cache
 			bot.watchers.delete(watcher); // Delete from bot's collection of watchers
 			const watchProps = require(`./watchers/${watcher}.js`); // Loads watcher

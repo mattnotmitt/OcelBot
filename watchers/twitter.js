@@ -43,28 +43,33 @@ const startStream = async bot => {
 		log.verbose('Connected to Twitter stream API.');
 	});
 	botStream.on('tweet', async tweet => {
-		const embed = new Discord.RichEmbed({
-			color: 0x00ACED,
-			author: {
-				name: `${tweet.user.name} - @${tweet.user.screen_name}`,
-				icon_url: tweet.user.profile_image_url,
-				url: `https://twitter.com/${tweet.user.screen_name}/status/${tweet.id_str}`
-			},
-			description: he.decode(tweet.text),
-			timestamp: (new Date(tweet.created_at)).toISOString(),
-			footer: {
-				text: `\u200B`,
-				icon_url: 'https://cdn.artemisbot.uk/img/twitter.png'
-			}
-		});
-		watchers = await TwitterWatch.findAll({where: {twitterID: tweet.user.id_str}});
-		if (watchers.length > 0) {
-			log.verbose(`User ${tweet.user.screen_name} has just tweeted at ${tweet.created_at}.`);
-			watchers.forEach(watch => {
-				if (!tweet.in_reply_to_user_id || watch.replies) {
-					bot.channels.get(watch.channelID).send('', {embed});
+		try {
+			const embed = new Discord.RichEmbed({
+				color: 0x00ACED,
+				author: {
+					name: `${tweet.user.name} - @${tweet.user.screen_name}`,
+					icon_url: tweet.user.profile_image_url,
+					url: `https://twitter.com/${tweet.user.screen_name}/status/${tweet.id_str}`
+				},
+				description: he.decode(tweet.text),
+				timestamp: (new Date(tweet.created_at)).toISOString(),
+				footer: {
+					text: `\u200B`,
+					icon_url: 'https://cdn.artemisbot.uk/img/twitter.png'
 				}
 			});
+			watchers = await TwitterWatch.findAll({where: {twitterID: tweet.user.id_str}});
+			if (watchers.length > 0) {
+				log.verbose(`User ${tweet.user.screen_name} has just tweeted at ${tweet.created_at}.`);
+				await Promise.all(watchers.map(watch => {
+					if (!tweet.in_reply_to_user_id || watch.replies) {
+						return bot.channels.get(watch.channelID).send('', {embed});
+					}
+					return null;
+				}));
+			}
+		} catch (err) {
+			log.error(`Something went wrong when handling tweet event: ${err.stack}`);
 		}
 	});
 	botStream.on('error', err => {
@@ -110,7 +115,7 @@ exports.start = async (msg, bot, args) => {
 		});
 		log.info(`Now watching ${name} in #${msg.channel.name} on ${msg.guild.name}.`);
 		await msg.reply(`I am now watching ${name} in this channel.`);
-		this.startStream(bot);
+		startStream(bot);
 	} catch (err) {
 		msg.reply('Couldn\'t watch this user! Check the logs.');
 		log.error(`Couldn't start watching a new user: ${err}`);
@@ -141,7 +146,7 @@ exports.stop = async (msg, bot, args) => {
 		await watch.destroy();
 		log.info(`No longer watching ${args[0]} in #${msg.channel.name} on ${msg.guild.name}.`);
 		await msg.reply(`I am no longer watching ${args[0]} in this channel.`);
-		this.startStream(bot);
+		startStream(bot);
 	} catch (err) {
 		msg.reply('Couldn\'t stop watching this user! Check the logs.');
 		log.error(`Couldn't stop watching a user: ${err}`);

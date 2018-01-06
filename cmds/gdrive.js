@@ -64,6 +64,9 @@ const checkFolder = folderID => {
 
 exports.func = async (msg, args) => {
 	try {
+		if (!args[0]) {
+			return msg.reply(`You haven't provided enough arguments. The proper syntax for "${this.data.name}" is \`${this.data.syntax}\`.`);
+		}
 		const folder = await checkFolder(args[0]);
 		const embed = new Discord.RichEmbed({
 			author: {
@@ -91,7 +94,7 @@ exports.func = async (msg, args) => {
 		if (err.message === 'DoesNotExist') {
 			return msg.reply('The selected ID does not correspond to any known folder.');
 		}
-		log.error(`Something went wrong: ${err}`);
+		log.error(`Something went wrong: ${err.stack}`);
 		msg.reply('Something\'s gone wrong. <@132479572569620480> check the logs mate.');
 	}
 };

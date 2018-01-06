@@ -23,7 +23,10 @@ exports.func = async (msg, args) => {
 			baseUrl: `https://api.steampowered.com`,
 			json: true
 		});
-		let id = args[0];
+		if (!args[0]) {
+			return msg.reply(`You haven't provided enough arguments. The proper syntax for "${this.data.name}" is \`${this.data.syntax}\`.`);
+		}
+		let id = args[0].split('/').slice(-1).pop() || args[0];
 		if (!(id.match(/^[0-9]+$/))) {
 			id = (await r(`/ISteamUser/ResolveVanityURL/v1/?key=${config.steamKey}&vanityurl=${args}`)).response.steamid;
 		}
@@ -71,11 +74,11 @@ exports.func = async (msg, args) => {
 				text: `Powered by Steam API. Took ${moment().diff(msg.createdAt)} ms.`
 			}
 		};
-		msg.channel.stopTyping();
-		await msg.channel.send('', {embed})
-          .catch(log.error);
+		msg.channel.stopTyping(true);
+		await msg.channel.send('', {embed});
 	} catch (err) {
-		msg.channel.stopTyping();
-		msg.reply('Fail. User probably has private profile/Steam API is down.').catch(log.error);
+		msg.channel.stopTyping(true);
+		msg.reply('Fail. User probably has private profile/Steam API is down.');
+		log.error(`Failed to get Steam user: ${err.stack}`);
 	}
 };

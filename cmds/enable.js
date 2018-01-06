@@ -22,6 +22,6 @@ exports.func = async (msg, args, bot) => {
 		await m.edit(`Successfully enabled: ${command}`);
 		log.info(`${msg.member.displayName} (${msg.author.username}#${msg.author.discriminator}) has enabled ${args[0]} in #${msg.channel.name} on ${msg.guild.name}.`);
 	} catch (err) {
-		log.error(`Something went wrong: ${err}`);
+		log.error(`Something went wrong: ${err.stack}`);
 	}
 };

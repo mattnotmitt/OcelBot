@@ -96,11 +96,9 @@ const checkGlyphs = async bot => {
 						url: `http://wakingtitan.com${glyphs.sort()[i]}`
 					}
 				});
-				for (const channel of data.channels) {
-					await bot.channels.get(channel).send('', {
-						embed
-					});
-				}
+				await Promise.all(data.channels.map(channel =>
+						bot.channels.get(channel).send('', {embed})
+				));
 				const resp = await snek.get(`http://wakingtitan.com${glyphs.sort()[i]}`);
 				jetpack.write(`watcherData/glyphs/glyph${glyphs.sort()[i].split('/').slice(-1)[0]}`, resp.body);
 				const uploadResult = await T.post('media/upload', {
@@ -198,11 +196,9 @@ const checkSite = async (site, bot) => {
 			await T.post('statuses/update', {
 				status
 			});
-			for (const channel of data.channels) {
-				await bot.channels.get(channel).send('', {
-					embed
-				});
-			}
+			await Promise.all(data.channels.map(channel =>
+					bot.channels.get(channel).send('', {embed})
+			));
 			await snek.get(`https://web.archive.org/save/${site}`);
 			jetpack.remove(`./watcherData/${data.sites[site]}-temp.html`);
 			jetpack.write(`./watcherData/${data.sites[site]}-latest.html`, req.body.toString());
@@ -272,7 +268,6 @@ exports.start = async (msg, bot, args) => {
 		sites: {},
 		glyphs: []
 	};
-	console.log(args);
 	if (args[0]) {
 		if (!args[1]) {
 			return msg.reply('You must supply an alias for this site.');

@@ -18,7 +18,7 @@ exports.func = async (msg, args) => {
 	try {
 		let resp;
 		if (args.length === 0) {
-			return msg.reply('You must provide at least 1 command for the bot to run.');
+			return msg.reply(`You haven't provided enough arguments. The proper syntax for "${this.data.name}" is \`${this.data.syntax}\`.`);
 		}
 		log.verbose(`${msg.member.displayName} (${msg.author.username}#${msg.author.discriminator}) has sent "${args.join(' ')}" to Waking Titan in #${msg.channel.name} on ${msg.guild.name}.`);
 		msg.channel.startTyping();
@@ -50,7 +50,7 @@ exports.func = async (msg, args) => {
 			url: 'http://wakingtitan.com'
 		}});
 	} catch (err) {
-		log.error(exports.data.name, `Something went wrong: ${err}`);
+		log.error(`Something went wrong: ${err.stack}`);
 		msg.reply('Something\'s gone wrong. <@132479572569620480> check the logs mate.');
 		msg.channel.stopTyping(true);
 	}

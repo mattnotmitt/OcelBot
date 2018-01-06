@@ -93,7 +93,7 @@ exports.func = async (msg, args) => {
 				}
 				break;
 			} catch (err) {
-				log.error(`Could not assign user to an operation: ${err}`);
+				log.error(`Could not assign user to an operation: ${err.stack}`);
 				return msg.reply(`Could not assign you to this operation. Contact Agent <@132479572569620480> for help.`);
 			}
 		} case ('leave'): {
@@ -116,7 +116,7 @@ exports.func = async (msg, args) => {
 				}
 				break;
 			} catch (err) {
-				log.error(`Could not remove user from an operation: ${err}`);
+				log.error(`Could not remove user from an operation: ${err.stack}`);
 				return msg.reply(`Failed to remove you from this operation. Contact Agent <@132479572569620480> for help.`);
 			}
 		} case ('alert'): {
@@ -138,7 +138,7 @@ exports.func = async (msg, args) => {
 				}
 				return msg.reply(':newspaper2: You don\'t have permission to use this operation command.');
 			} catch (err) {
-				log.error(`Could not alert operation agents: ${err}`);
+				log.error(`Could not alert operation agents: ${err.stack}`);
 				return msg.reply(`Failed to alert operation agents. Contact Agent <@132479572569620480> for help.`);
 			}
 		} case ('list'): {

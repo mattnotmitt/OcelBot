@@ -42,7 +42,7 @@ exports.watcher = bot => {
 		ml.start();
 	});
 	ml.on('error', err => {
-		log.error(`Issue with IMAP: ${err}`);
+		log.error(`Issue with IMAP: ${err.stack}`);
 	});
 	ml.on('mail', async (mail, seqno, attributes) => {
 		try {
@@ -74,12 +74,12 @@ exports.watcher = bot => {
 						status: mail.subject.length <= (216 - mail.from[0].name.length) ? `A new email has been received from ${mail.from[0].name} with subject ${mail.subject}" #WakingTitan` : `A new email has been received from ${mail.from[0].name} with subject "${mail.subject.slice(0, 215 - mail.from[0].name.length)}…" #WakingTitan`
 					});
 				}
-				mailWatchers.forEach(async watch => {
+				await Promise.all(mailWatchers.map(watch =>
 					// Send embed to watching discord channels
 					bot.channels.get(watch.channelID).send('', {
 						embed
-					}).catch(log.error);
-				});
+					})
+				));
 			}
 		} catch (err) {
 			log.error(`Something went wrong: ${err}`);

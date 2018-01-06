@@ -42,12 +42,9 @@ const checkCommands = async bot => {
 				timestamp: moment().toISOString()
 			});
 			await T.post('statuses/update', {status: statMsg.length <= (204 - watch.command.length) ? `The wakingtitan.com ${watch.command} command has been updated to say "${statMsg}" #WakingTitan` : `The wakingtitan.com ${watch.command} command has been updated to say "${statMsg.slice(0, 203 - watch.command.length)}…" #WakingTitan`});
-			(await TerminalWatch.findAll({where: {command: watch.command}})).forEach(async watcher => {
-				watcher.update({message: statMsg});
-				await bot.channels.get(watcher.channelID).send('', {
-					embed
-				});
-			});
+			Promise.all((await TerminalWatch.findAll({where: {command: watch.command}})).map(watcher =>
+				Promise.all([watcher.update({message: statMsg}), bot.channels.get(watcher.channelID).send('', {embed})])
+			));
 		} catch (err) {
 			log.error(`Something went wrong: ${err}`);
 		}

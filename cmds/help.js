@@ -78,15 +78,18 @@ exports.func = async (msg, args, bot) => {
 				help.setFooter(footer.slice(0, -1));
 			}
 			help.setDescription(cmdList.slice(0, -1));
-			dm = await msg.author.createDM();
-			await dm.send('If you can\'t see any commands listed, make sure you have link previews enabled in **Settings** -> **Text & Images**.', {
-				embed: help
-			}).then(() => msg.reply('I have DMed you with the avaliable commands in this server.')).catch(err => {
-				log.error(`Could not DM user: ${err}.`);
+			try {
+				dm = await msg.author.createDM();
+				await dm.send('If you can\'t see any commands listed, make sure you have link previews enabled in **Settings** -> **Text & Images**.', {
+					embed: help
+				});
+				await msg.reply('I have DMed you with the avaliable commands in this server.');
+			} catch (err) {
+				log.error(`Could not DM user: ${err.stack}.`);
 				msg.reply(`I could not DM you, please check your settings.`);
-			});
+			}
 		}
 	} catch (err) {
-		log.error(`Error: ${err}.`);
+		log.error(`Error: ${err.stack}.`);
 	}
 };

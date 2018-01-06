@@ -5,7 +5,7 @@ exports.data = {
 	description: 'Creates embeds for tweets.',
 	group: 'embeds',
 	author: 'Matt C: matt@artemisbot.uk',
-	syntax: 'twit [id/link]',
+	syntax: 'twit [tweet id/link]',
 	permissions: 0,
 	anywhere: true
 };
@@ -18,6 +18,9 @@ const config = require('../config.json');
 exports.func = async (msg, args) => {
 	msg.channel.startTyping();
 	try {
+		if (!args[0]) {
+			return msg.reply(`You haven't provided enough arguments. The proper syntax for "${this.data.name}" is \`${this.data.syntax}\`.`);
+		}
 		const options = {
 			id: args[0].split('/').slice(-1).pop() || args[0]
 		};

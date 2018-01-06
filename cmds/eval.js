@@ -18,6 +18,9 @@ const clean = text => {
 };
 
 exports.func = async (msg, args, bot) => {
+	if (!args) {
+		return msg.reply(`You haven't provided enough arguments. The proper syntax for "${this.data.name}" is \`${this.data.syntax}\`.`);
+	}
 	log.info(`${msg.member.displayName} (${msg.author.username}#${msg.author.discriminator}) has used eval in #${msg.channel.name} on ${msg.guild.name}.`);
 	const code = args.join(' ');
 	try {
@@ -25,8 +28,8 @@ exports.func = async (msg, args, bot) => {
 		if (typeof evaled !== 'string') {
 			evaled = require('util').inspect(evaled);
 		}
-		await msg.channel.send('```xl\n' + clean(evaled) + '\n```').catch(err => log.error(err));
+		await msg.channel.send('```xl\n' + clean(evaled) + '\n```').catch(err => log.error(err.stack));
 	} catch (err) {
-		await msg.channel.send('`ERROR` ```xl\n' + clean(err) + '\n```').catch(err => log.error(err));
+		await msg.channel.send('`ERROR` ```xl\n' + clean(err) + '\n```').catch(err => log.error(err.stack));
 	}
 };

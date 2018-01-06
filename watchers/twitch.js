@@ -9,6 +9,7 @@ const request = require('request-promise-native');
 const Discord = require('discord.js');
 const moment = require('moment');
 const humanize = require('humanize-duration');
+const Twit = require('twit');
 const uuid = require('uuid/v4');
 
 const TwitchWatch = require('../lib/models/twitchwatch');
@@ -16,6 +17,8 @@ const log = require('../lib/log.js')(exports.data.name);
 const config = require('../config.json');
 
 let repeat;
+
+const T = new Twit(config.WTTwitter);
 
 const whr = request.defaults({
 	uri: `https://api.twitch.tv/helix/webhooks/hub`,
@@ -159,14 +162,12 @@ const startServer = async bot => {
 					text: `\u200B`
 				}
 			});
-			twitchWatchers.forEach(async watch => {
-				// Update database
-				await watch.update({live: true});
-				// Send embed to watching discord channels
-				bot.channels.get(watch.channelID).send('', {
-					embed
-				}).catch(log.error);
-			});
+			if (req.params.user === '163329949') {
+				await T.post('statuses/update', {status: `${channelData.url} has gone live! #WakingTitan`});
+			}
+			await Promise.all(twitchWatchers.map(watcher =>
+				Promise.all([watcher.update({live: true}), bot.channels.get(watcher.channelID).send('', {embed})])
+			));
 		} else { // If channel has gone offline, array is empty
 			log.info(`${twitchWatchers[0].twitchName} has gone offline on Twitch.`);
 			// Update database

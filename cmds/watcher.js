@@ -3,7 +3,7 @@ exports.data = {
 	command: 'watcher',
 	description: 'Watcher functions',
 	group: 'system',
-	syntax: 'watcher [start|stop|enable|disable|list] [watcherName] [params]',
+	syntax: 'watcher [start|stop|enable|disable|genable|gdisable|list] [watcherName] [params]',
 	author: 'Matt C: matt@artemisbot.uk',
 	permissions: 3,
 	anywhere: true
@@ -21,6 +21,9 @@ exports.func = async (msg, args, bot) => {
 		}
 	});
 	try {
+		if (!args[0]) {
+			return msg.reply(`You haven't provided enough arguments. The proper syntax for "${this.data.name}" is \`${this.data.syntax}\`.`);
+		}
 		switch (args[0]) {
 			case 'start':
 				{
@@ -153,6 +156,6 @@ exports.func = async (msg, args, bot) => {
 		}
 	} catch (err) {
 		msg.reply('Something went wrong.');
-		log.error(`Something went wrong: ${err}`);
+		log.error(`Something went wrong: ${err.stack}`);
 	}
 };

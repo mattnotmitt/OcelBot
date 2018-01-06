@@ -217,6 +217,6 @@ exports.func = async (msg, args) => {
 		}
 	} catch (err) {
 		msg.channel.stopTyping(true);
-		log.error(`Something went wrong: ${err}.`);
+		log.error(`Something went wrong: ${err.stack}.`);
 	}
 };

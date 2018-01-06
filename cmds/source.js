@@ -15,6 +15,6 @@ exports.func = async msg => {
 		log.verbose(`${msg.member.displayName} (${msg.author.username}#${msg.author.discriminator}) has requested the bot's source in #${msg.channel.name} on ${msg.guild.name}.`);
 		await msg.reply(`The bot's source can be found at https://github.com/artemisbot/ocelbot`);
 	} catch (err) {
-		log.error(`Something went wrong: ${err}`);
+		log.error(`Something went wrong: ${err.stack}`);
 	}
 };

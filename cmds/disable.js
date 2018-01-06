@@ -13,6 +13,9 @@ const log = require('../lib/log.js')(exports.data.name);
 
 exports.func = async (msg, args, bot) => {
 	try {
+		if (!args[0]) {
+			return msg.reply(`You haven't provided enough arguments. The proper syntax for "${this.data.name}" is \`${this.data.syntax}\`.`);
+		}
 		let command;
 		if (bot.commands.has(args[0])) {
 			command = args[0];
@@ -25,6 +28,6 @@ exports.func = async (msg, args, bot) => {
 		await m.edit(`Successfully disabled: ${command}`);
 		log.info(`${msg.member.displayName} (${msg.author.username}#${msg.author.discriminator}) has disabled ${args[0]} in #${msg.channel.name} on ${msg.guild.name}.`);
 	} catch (err) {
-		log.error(`Something went wrong: ${err}`);
+		log.error(`Something went wrong: ${err.stack}`);
 	}
 };
