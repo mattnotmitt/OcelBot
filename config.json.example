@@ -1,11 +1,40 @@
 {
-  "prefix": "!",
-  "token": "",
-  "ownerID": "",
-  "consumer_key": "",
-  "consumer_secret": "",
-  "access_token": "",
-  "access_token_secret": "",
-  "twitWatch": {},
-  "activeChannels": []
+	"prefix": "",
+	"token": "",
+	"ownerID": "",
+	"debugServer": "",
+	"twitch_clientid": "",
+	"twitter": {
+	    "consumer_key": "",
+	    "consumer_secret": "",
+	    "access_token": "",
+	    "access_token_secret": ""
+	},
+	"WTTwitter": {
+	    "consumer_key": "",
+	    "consumer_secret": "",
+	    "access_token": "",
+	    "access_token_secret": ""
+		},
+	"youtubeKey": "",
+	"steamKey": "",
+	"wiki_user": "",
+	"wiki_pass": "",
+	"gdrive_service_account": {
+	    "type": "",
+	    "project_id": "",
+	    "private_key_id": "",
+	    "private_key": "",
+	    "client_email": "",
+	    "client_id": "",
+	    "auth_uri": "",
+	    "token_uri": "",
+	    "auth_provider_x509_cert_url": "",
+	    "client_x509_cert_url": ""
+	},
+	"dbPass": "",
+	"mailUsername": "",
+	"mailPassword": "",
+	"mailHost": "",
+	"lfmKey": ""
 }
