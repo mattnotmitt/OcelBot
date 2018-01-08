@@ -6,6 +6,7 @@ exports.data = {
 };
 
 const MailListener = require('mail-listener2');
+const moment = require('moment');
 const Discord = require('discord.js');
 const Twit = require('twit');
 
@@ -59,12 +60,12 @@ exports.watcher = bot => {
 				const embed = new Discord.RichEmbed({
 					author: {
 						name: `A new email has been received from ${mail.from[0].name}`,
-						icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.png'
+						icon_url: 'https://cdn.artemisbot.uk/img/ocel.jpg'
 					},
 					description: `**Subject:** ${mail.subject}`,
 					color: 0x993E4D,
 					footer: {
-						text: 'Sent at',
+						text: 'Sent',
 						icon_url: 'https://cdn.artemisbot.uk/img/mail.png'
 					},
 					timestamp: mail.date
@@ -111,6 +112,28 @@ exports.start = async (msg, bot, args) => {
 
 exports.stop = (msg, bot, args) => {
 	// Process for removing channel/watched item
+};
+
+exports.list = async msg => {
+	const fields = (await MailWatch.findAll({where: {channelID: msg.channel.id}})).map(watch => {
+		return {
+			name: watch.address,
+			value: `Created ${moment(watch.createdAt).fromNow()}`
+		};
+	});
+	if (fields.length > 0) {
+		msg.reply('', {embed: {
+			title: `Mail Watchers running in #${msg.channel.name} on ${msg.guild.name}`,
+			fields,
+			color: 0x993E4D,
+			footer: {
+				icon_url: 'https://cdn.artemisbot.uk/img/ocel.jpg',
+				text: 'Ocel'
+			}
+		}});
+	} else {
+		msg.reply('There are no mail watchers in this channel.');
+	}
 };
 
 exports.disable = () => {

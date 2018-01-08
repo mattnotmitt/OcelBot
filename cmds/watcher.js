@@ -141,11 +141,21 @@ exports.func = async (msg, args, bot) => {
 				}
 			case 'list':
 				{
-					const watcherList = (await Watcher.all()).map(w => {
-						return w.watcherName;
-					}).join(', ');
-					msg.reply(`Available watchers are \`${watcherList}\`.`);
-					log.info(`${msg.member.displayName} (${msg.author.username}#${msg.author.discriminator}) has listed the available watchers in #${msg.channel.name} on ${msg.guild.name}.`);
+					if (watcher) {
+						if (watcher.disabledGuilds.includes(msg.guild.id)) {
+							msg.reply(`This watcher has been disabled in this guild. Re-enable it with \`ocel watcher genable ${args[1]}\`.`);
+						} else {
+							bot.watchers.get(args[1]).list(msg, bot, args.slice(2));
+						}
+					} else if (args[1]) {
+						msg.reply('Selected watcher does not exist.');
+					} else {
+						const watcherList = (await Watcher.all()).map(w => {
+							return w.watcherName;
+						}).join(', ');
+						msg.reply(`Available watchers are \`${watcherList}\`.`);
+						log.info(`${msg.member.displayName} (${msg.author.username}#${msg.author.discriminator}) has listed the available watchers in #${msg.channel.name} on ${msg.guild.name}.`);
+					}
 					break;
 				}
 			default:
