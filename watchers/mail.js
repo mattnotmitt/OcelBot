@@ -91,7 +91,7 @@ exports.watcher = bot => {
 exports.start = async (msg, bot, args) => {
 	// Process for new channel/watched item
 	try {
-		if (args.length < 0) {
+		if (args.length <= 0) {
 			return msg.reply('Please add an email address.');
 		}
 		await MailWatch.sync();
@@ -106,16 +106,34 @@ exports.start = async (msg, bot, args) => {
 		await msg.reply(`Now watching for mail from "${args[0]}" in this channel.`);
 	} catch (err) {
 		msg.reply('Couldn\'t watch this address! Check the logs.');
-		log.error(`Couldn't start watching a new stream: ${err}`);
+		log.error(`Couldn't start watching a new email address: ${err}`);
 	}
 };
 
-exports.stop = (msg, bot, args) => {
-	// Process for removing channel/watched item
+exports.stop = async (msg, bot, args) => {
+    // Process for removing channel/watched item
+	try {
+		if (args.length <= 0) {
+			return msg.reply('Please add an email address.');
+		}
+		await MailWatch.sync();
+		const watcher = await MailWatch.findOne({where: {address: args[0], channelID: msg.channel.id}});
+		if (!watcher) {
+			return msg.reply(`"${args[0]}" was not being watched in this channel.`);
+		}
+		await watcher.destroy();
+		log.info(`Stopped watching for mail from "${args[0]}" in ${msg.channel.name} on ${msg.guild.name}.`);
+		await msg.reply(`Stopped watching for mail from "${args[0]}" in this channel.`);
+	} catch (err) {
+		msg.reply('Couldn\'t remove this address! Check the logs.');
+		log.error(`Couldn't stop watching a stream: ${err}`);
+	}
 };
 
-exports.list = async msg => {
-	const fields = (await MailWatch.findAll({where: {channelID: msg.channel.id}})).map(watch => {
+exports.list = async (msg, bot, args) => {
+	const channelID = args[0] && bot.channels.has(args[0]) ? args[0] : msg.channel.id;
+	const channel = bot.channels.get(args[0]) || msg.channel;
+	const fields = (await MailWatch.findAll({where: {channelID}})).map(watch => {
 		return {
 			name: watch.address,
 			value: `Created ${moment(watch.createdAt).fromNow()}`
@@ -123,7 +141,7 @@ exports.list = async msg => {
 	});
 	if (fields.length > 0) {
 		msg.reply('', {embed: {
-			title: `Mail Watchers running in #${msg.channel.name} on ${msg.guild.name}`,
+			title: `Mail Watchers running in #${channel.name} on ${channel.guild.name}`,
 			fields,
 			color: 0x993E4D,
 			footer: {
@@ -132,7 +150,7 @@ exports.list = async msg => {
 			}
 		}});
 	} else {
-		msg.reply('There are no mail watchers in this channel.');
+		msg.reply(`There are no mail watchers in ${args[0] && bot.channels.has(args[0]) ? `#${channel.name} on ${channel.guild.name}` : 'this channel'}.`);
 	}
 };
 
