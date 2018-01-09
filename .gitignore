@@ -9,3 +9,11 @@ emotes.json
 pm2.json
 watcherData
 \.editorconfig
+
+\.vscode/
+
+emotesite\.js
+
+watcherData\.json
+
+pushData\.js

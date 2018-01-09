@@ -10,6 +10,7 @@ const Twit = require('twit');
 const Discord = require('discord.js');
 const he = require('he');
 const chalk = require('chalk');
+const moment = require('moment');
 const config = require('../config.json');
 const log = require('../lib/log')(exports.data.name);
 const TwitterWatch = require('../lib/models/twitterwatch');
@@ -157,6 +158,34 @@ exports.stop = async (msg, bot, args) => {
 exports.watcher = async bot => {
 	startStream(bot);
 	log.verbose(chalk.green(`${exports.data.name} has initialised successfully.`));
+};
+
+exports.list = async (msg, bot, args) => {
+	const channelID = args[0] && bot.channels.has(args[0]) ? args[0] : msg.channel.id;
+	const channel = bot.channels.get(args[0]) || msg.channel;
+	const fields = (await TwitterWatch.findAll({where: {channelID}})).map(watch => {
+		return {
+			name: `@${watch.twitterName}${watch.replies ? ' (inc. replies)' : ''}`,
+			value: `Created ${moment(watch.createdAt).fromNow()}`,
+			inline: true
+		};
+	});
+	if (fields.length > 0) {
+		msg.reply('', {embed: {
+			author: {
+				icon_url: 'https://cdn.artemisbot.uk/img/twitter.png?b',
+				name: `Twitter watchers running in #${channel.name} on ${channel.guild.name}`
+			},
+			fields,
+			color: 0x993E4D,
+			footer: {
+				icon_url: 'https://cdn.artemisbot.uk/img/ocel.jpg',
+				text: 'Ocel'
+			}
+		}});
+	} else {
+		msg.reply(`There are no twitter watchers in ${args[0] && bot.channels.has(args[0]) ? `#${channel.name} on ${channel.guild.name}` : 'this channel'}.`);
+	}
 };
 
 exports.disable = () => {

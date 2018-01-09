@@ -105,12 +105,16 @@ exports.list = async (msg, bot, args) => {
 	const fields = (await TerminalWatch.findAll({where: {channelID}})).map(watch => {
 		return {
 			name: watch.command,
-			value: `Created ${moment(watch.createdAt).fromNow()}`
+			value: `Created ${moment(watch.createdAt).fromNow()}`,
+			inline: true
 		};
 	});
 	if (fields.length > 0) {
 		msg.reply('', {embed: {
-			title: `Waking Titan Terminal Watchers running in #${channel.name} on ${channel.guild.name}`,
+			author: {
+				name: `Terminal watchers running in #${channel.name} on ${channel.guild.name}`,
+				icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.png?b'
+			},
 			fields,
 			color: 0x993E4D,
 			footer: {
@@ -119,7 +123,7 @@ exports.list = async (msg, bot, args) => {
 			}
 		}});
 	} else {
-		msg.reply(`There are no mail watchers in ${args[0] && bot.channels.has(args[0]) ? `#${channel.name} on ${channel.guild.name}` : 'this channel'}.`);
+		msg.reply(`There are no terminal watchers in ${args[0] && bot.channels.has(args[0]) ? `#${channel.name} on ${channel.guild.name}` : 'this channel'}.`);
 	}
 };
 

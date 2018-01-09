@@ -31,6 +31,11 @@ const ml = new MailListener({
 	attachments: false
 });
 
+const reload = () => {
+	log.error(`Bot has disconnected from IMAP server.`);
+	ml.start();
+};
+
 exports.watcher = bot => {
 	// Startup process for watcher
 	this.disable();
@@ -38,10 +43,7 @@ exports.watcher = bot => {
 	ml.on('server:connected', () => {
 		log.verbose(`${exports.data.name} has initialised successfully and connected to the IMAP server.`);
 	});
-	ml.on('server:disconnected', () => {
-		log.error(`Bot has disconnected from IMAP server.`);
-		ml.start();
-	});
+	ml.on('server:disconnected', reload);
 	ml.on('error', err => {
 		log.error(`Issue with IMAP: ${err.stack}`);
 	});
@@ -136,12 +138,16 @@ exports.list = async (msg, bot, args) => {
 	const fields = (await MailWatch.findAll({where: {channelID}})).map(watch => {
 		return {
 			name: watch.address,
-			value: `Created ${moment(watch.createdAt).fromNow()}`
+			value: `Created ${moment(watch.createdAt).fromNow()}`,
+			inline: true
 		};
 	});
 	if (fields.length > 0) {
 		msg.reply('', {embed: {
-			title: `Mail Watchers running in #${channel.name} on ${channel.guild.name}`,
+			author: {
+				name: `Mail watchers running in #${channel.name} on ${channel.guild.name}`,
+				icon_url: 'https://cdn.artemisbot.uk/img/mail.png?c'
+			},
 			fields,
 			color: 0x993E4D,
 			footer: {
@@ -156,6 +162,7 @@ exports.list = async (msg, bot, args) => {
 
 exports.disable = () => {
 	try {
+		ml.removeListener('server:disconnected', reload);
 		ml.stop();
 	} catch (err) {
 		log.error(`Failed to stop listener: ${err}`);

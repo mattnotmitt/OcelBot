@@ -277,3 +277,31 @@ exports.stop = async (msg, bot, args) => {
 		cancelWebhook(selectedWatch);
 	}
 };
+
+exports.list = async (msg, bot, args) => {
+	const channelID = args[0] && bot.channels.has(args[0]) ? args[0] : msg.channel.id;
+	const channel = bot.channels.get(args[0]) || msg.channel;
+	const fields = (await TwitchWatch.findAll({where: {channelID}})).map(watch => {
+		return {
+			name: watch.twitchName,
+			value: `Created ${moment(watch.createdAt).fromNow()}`,
+			inline: true
+		};
+	});
+	if (fields.length > 0) {
+		msg.reply('', {embed: {
+			author: {
+				icon_url: 'https://cdn.artemisbot.uk/img/twitch.png?c',
+				name: `Twitch stream watchers running in #${channel.name} on ${channel.guild.name}`
+			},
+			fields,
+			color: 0x993E4D,
+			footer: {
+				icon_url: 'https://cdn.artemisbot.uk/img/ocel.jpg',
+				text: 'Ocel'
+			}
+		}});
+	} else {
+		msg.reply(`There are no twitch watchers in ${args[0] && bot.channels.has(args[0]) ? `#${channel.name} on ${channel.guild.name}` : 'this channel'}.`);
+	}
+};

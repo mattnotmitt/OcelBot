@@ -67,11 +67,12 @@ exports.func = async (msg, args) => {
 		if (!args[0]) {
 			return msg.reply(`You haven't provided enough arguments. The proper syntax for "${this.data.name}" is \`${this.data.syntax}\`.`);
 		}
-		const folder = await checkFolder(args[0]);
+		const folder = await checkFolder(args[0].split('/').splice(-1)[0]);
 		const embed = new Discord.RichEmbed({
 			author: {
 				name: `Contents of ${folder.parentName}`,
-				url: folder.parentLink
+				url: folder.parentLink,
+				icon_url: 'https://cdn.artemisbot.uk/img/google.png?a'
 			},
 			color: 0x993E4D,
 			timestamp: folder.parentMod,
@@ -80,7 +81,7 @@ exports.func = async (msg, args) => {
 			}
 		});
 		folder.files.forEach(file => {
-			embed.addField(`${file.name}`, `${file.mimeType.split('/').slice(-1)[0].split('.').slice(-1)[0].toUpperCase()} | [Link](${file.webViewLink})`, false);
+			embed.addField(`${file.name}`, `${file.mimeType.split('/').slice(-1)[0].split('.').slice(-1)[0].toUpperCase()} | [Link](${file.webViewLink})`, true);
 		});
 		log.info(`${msg.member.displayName} (${msg.author.username}#${msg.author.discriminator}) has checked ${folder.parentName} (${args[0]}) in #${msg.channel.name} on ${msg.guild.name}.`);
 		await msg.channel.send('', {embed});

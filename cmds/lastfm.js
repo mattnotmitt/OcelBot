@@ -10,17 +10,50 @@ exports.data = {
 };
 
 const request = require('request-promise-native');
+const snek = require('snekfetch');
 const Discord = require('discord.js');
 const moment = require('moment');
 const log = require('../lib/log.js')(exports.data.name);
 const LastFMDB = require('../lib/models/lastfm');
 const config = require('../config.json');
 
+let spotToken;
+
 const safeLink = link => {
-	return link.replace('(', '%28').replace(')', '%29');
+	return link.replace(/\(/g, '%28').replace(/\)/g, '%29');
 };
 
-exports.func = async (msg, args) => {
+const getSpotifyLink = (bot, artist, title) => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			log.debug('Searching for track on Spotify!');
+			if (spotToken ? moment().diff(spotToken.made, 'seconds') > spotToken.expire : true) {
+				log.debug('Token expired. Making request to Spotify.');
+				const tokenReq = await snek.post('https://accounts.spotify.com/api/token?grant_type=client_credentials')
+					.set('Authorization', `Basic ${Buffer.from(`${bot.config.spotifyCid}:${bot.config.spotifySecret}`).toString('base64')}`)
+					.set('Content-Type', 'application/x-www-form-urlencoded');
+				spotToken = {
+					token: tokenReq.body.access_token,
+					expire: tokenReq.body.expires_in,
+					made: moment()
+				};
+				log.debug('Token acquired.');
+			}
+			log.debug('Searching for song.');
+			const spotReq = await snek.get(`https://api.spotify.com/v1/search?q=track:${title}%20artist:${artist}&type=track`).set('Authorization', `Bearer ${spotToken.token}`);
+			if (spotReq.body.tracks.items.length > 0) {
+				log.debug('Song found!');
+				return resolve(spotReq.body.tracks.items[0].external_urls.spotify);
+			}
+			log.debug('Song not found.');
+			return resolve(false);
+		} catch (err) {
+			reject(err);
+		}
+	});
+};
+
+exports.func = async (msg, args, bot) => {
 	try {
 		msg.channel.startTyping();
 		if (args.length === 0) {
@@ -45,16 +78,17 @@ exports.func = async (msg, args) => {
 					return msg.reply('You must either have a linked last.fm account or provide a username in your command.');
 				}
 				const user = args[1] || userData.lfmUsername;
-				log.debug('Found user.');
 				if ((await r(`&method=user.getinfo&user=${user}`)).message === 'User not found') {
 					msg.channel.stopTyping(true);
 					return msg.reply('Specified user does not exist.');
 				}
+				log.debug('Found user.');
 				const songData = (await r(`&method=user.getRecentTracks&user=${user}`)).recenttracks.track[0];
 				if (!songData) {
 					return msg.reply(`${user} has never scrobbled anything.`);
 				}
 				log.debug('Fetched nowplaying data.');
+				const spotifyLink = await getSpotifyLink(bot, songData.artist['#text'], songData.name);
 				const embed = new Discord.RichEmbed({
 					color: 0xD51007,
 					fields: [
@@ -78,7 +112,7 @@ exports.func = async (msg, args) => {
 						url: songData.image[1]['#text']
 					},
 					footer: {
-						text: `Powered by the last.fm API. Took ${moment().diff(msg.createdAt)} ms.`
+						text: `Powered by the last.fm & Spotify API. Took ${moment().diff(msg.createdAt)} ms.`
 					}
 				});
 				try {
@@ -87,6 +121,9 @@ exports.func = async (msg, args) => {
 					}
 				} catch (err) {
 					embed.setAuthor(`Last played on last.fm for ${user}`, 'https://cdn.artemisbot.uk/img/lastfm.png', `https://last.fm/user/${user}`);
+				}
+				if (spotifyLink) {
+					embed.addField('Spotify', `[Link](${spotifyLink})`, true);
 				}
 				log.debug('Created embed data.');
 				msg.channel.stopTyping(true);
