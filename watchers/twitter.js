@@ -62,9 +62,13 @@ const startStream = async bot => {
 			watchers = await TwitterWatch.findAll({where: {twitterID: tweet.user.id_str}});
 			if (watchers.length > 0) {
 				log.verbose(`User ${tweet.user.screen_name} has just tweeted at ${tweet.created_at}.`);
+
 				await Promise.all(watchers.map(watch => {
-					if (!tweet.in_reply_to_user_id || watch.replies) {
+					log.verbose(`Pass reply: ${!tweet.in_reply_to_user_id || watch.replies} | Pass filter: ${watch.filters.length > 0 ? watch.filters.every(filter => he.decode(tweet.text).includes(filter)) : true} | Send: ${(!tweet.in_reply_to_user_id || watch.replies) && (watch.filters.length > 0 ? watch.filters.every(filter => he.decode(tweet.text).includes(filter)) : true)}`);
+					if ((!tweet.in_reply_to_user_id || watch.replies) && (watch.filters.length > 0 ? watch.filters.every(filter => he.decode(tweet.text).includes(filter)) : true)) {
 						return bot.channels.get(watch.channelID).send('', {embed});
+					} else if (watch.filters.length > 0) {
+						return log.verbose('Did not match filters for this channel\'s watcher.');
 					}
 					return null;
 				}));

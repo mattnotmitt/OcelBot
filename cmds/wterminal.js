@@ -5,6 +5,7 @@ exports.data = {
 	group: 'WakingTitan',
 	syntax: 'wterminal [command]',
 	author: 'Matt C: matt@artemisbot.uk',
+	anywhere: 2,
 	permissions: 0
 };
 
@@ -23,7 +24,7 @@ exports.func = async (msg, args) => {
 		log.verbose(`${msg.member.displayName} (${msg.author.username}#${msg.author.discriminator}) has sent "${args.join(' ')}" to Waking Titan in #${msg.channel.name} on ${msg.guild.name}.`);
 		msg.channel.startTyping();
 		if (cache[args.join(' ')]) {
-			if (moment().diff(moment.unix(cache[args.join(' ')].last), 'minutes') >= 5) {
+			if (moment().diff(moment.unix(cache[args.join(' ')].last), 'minutes') >= 1) {
 				log.debug('Cached for too long, requesting.');
 				resp = await this.runCommand(args[0], args.slice(1));
 				cache[args.join(' ')] = {resp, last: moment().unix()};

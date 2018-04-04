@@ -20,7 +20,7 @@ export default {
     return {
       msg: "",
       guilds: [],
-	  excluded: ""
+	    excluded: ""
     }
   },
   created() {

@@ -16,6 +16,7 @@ const moment = require('moment');
 const snek = require('snekfetch');
 const strftime = require('strftime');
 const Twit = require('twit');
+const TwitterMedia = require('twitter-media');
 
 const log = require('../lib/log.js')(exports.data.name);
 const config = require('../config.json');
@@ -25,17 +26,7 @@ const T = new Twit(config.WTTwitter);
 
 // Makes repeats global
 
-const hasUpdate = {
-	'https://echo-64.com': false,
-	'https://atlas-65.com': false,
-	'https://superlumina-6c.com': false,
-	'https://myriad-70.com': false,
-	'https://multiverse-75.com': false,
-	'https://wakingtitan.com': false,
-	'http://csd.atlas-65.com': false,
-	'https://project-wt.com': false,
-	'https://www.nomanssky.com': false
-};
+const hasUpdate = {};
 let repeat;
 
 // ================| Helper Functions |================
@@ -101,19 +92,11 @@ const checkGlyphs = async bot => {
 				));
 				const resp = await snek.get(`http://wakingtitan.com${glyphs.sort()[i]}`);
 				jetpack.write(`watcherData/glyphs/glyph${glyphs.sort()[i].split('/').slice(-1)[0]}`, resp.body);
-				const uploadResult = await T.post('media/upload', {
-					media_data: resp.body.toString('base64')
-				});
-				await delay(30 * 1000);
-				const result = await T.post('media/metadata/create', {
-					media_id: uploadResult.data.media_id_string,
-					alt_text: {
-						text: 'Glyph from wakingtitan.com.'
-					}
-				});
+				const tm = new TwitterMedia(config.WTTwitterMedia);
+				const glyphImg = await tm.uploadMedia('image', resp.body);
 				await T.post('statuses/update', {
 					status: 'A new glyph has been activated at wakingtitan.com! #WakingTitan',
-					media_ids: result.data.media_id_string
+					media_ids: glyphImg.media_id_string
 				});
 				change = true;
 			}
@@ -232,13 +215,13 @@ const querySites = async bot => {
 		await Promise.all(Object.keys(data.sites).map(site => checkSite(site, bot)));
 		repeat = setTimeout(async () => {
 			querySites(bot);
-		}, 30 * 1000);
+		}, 15 * 1000);
 	} catch (err) {
 		if (err.status) {
 			log.warn(`Failed to access a site. Will retry in 30 seconds.`);
 			repeat = setTimeout(async () => {
 				querySites(bot);
-			}, 30 * 1000);
+			}, 15 * 1000);
 		} else {
 			log.error(`Site query failed. ${exports.data.name} has been disabled for safety.`);
 			bot.channels.get('338712920466915329').send(`Site query failed, ${exports.data.name} disabled.`);
@@ -275,17 +258,23 @@ exports.start = async (msg, bot, args) => {
 		if (Object.keys(data.sites).map(site => site.replace(/https?:\/\//g, '')).includes(args[0].replace(/https?:\/\/|\//g, ''))) {
 			return msg.reply('Already watching this site.');
 		}
-		if (Object.values(data.wtSites.sites).includes(args[1])) {
+		if (Object.values(data.sites).includes(args[1])) {
 			return msg.reply('Already watching a site with this alias.');
 		}
+		log.debug(`Attempting to enable global watching of ${args[0]} in #${msg.channel.name} on ${msg.guild.name}.`);
 		try {
-			const body = await snek.get(args[0]);
-			jetpack.write(`./watcherData/${args[1]}-latest.html`, body);
-			jetpack.write(`./watcherData/${args[1]}-logs/${strftime('%F - %H-%M-%S')}.html`, body);
+			const site = await snek.get(args[0]);
+			log.debug('Fetched page.');
+			jetpack.write(`./watcherData/${args[1]}-latest.html`, site.body.toString());
+			jetpack.write(`./watcherData/${args[1]}-logs/${strftime('%F - %H-%M-%S')}.html`, site.body.toString());
+			log.debug('Saved page.');
 			data.sites[args[0]] = args[1];
+			log.debug('Cached address for future searches.');
 			wtSites.update({data});
+			log.debug(`Now globally watching ${args[1]} (${args[0]}).`);
 			return msg.reply('Now globally watching this site.');
 		} catch (err) {
+			log.error(`Failed to add new site: ${err}`);
 			return msg.reply('Failed to find specified site.');
 		}
 	} else {

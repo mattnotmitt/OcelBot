@@ -5,6 +5,7 @@
     "main": "main.js",
     "dependencies": {
         "body-parser": "^1.18.2",
+        "canvas": "^1.6.9",
         "chalk": "^2.3.0",
         "child-process-promise": "^2.2.1",
         "cors": "^2.8.4",
@@ -26,7 +27,9 @@
         "snekfetch": "^3.6.1",
         "strftime": "^0.10.0",
         "twit": "^2.2.9",
+        "twitter-media": "^0.2.0",
         "uuid": "^3.1.0",
+        "webshot": "git+https://github.com/adespresso/node-webshot.git#pass-zoom-factor-to-phantom",
         "winston": "^2.4.0",
         "winston-daily-rotate-file": "^1.7.2"
     },

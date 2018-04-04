@@ -41,6 +41,9 @@ bot.loadCmds = () => {
 				try {
 					const props = require(`./cmds/${f}`); // Load the command
 					log.verbose(`Loading Command: ${props.data.name}. 👌`);
+					if (props.startup) {
+						props.startup(bot);
+					}
 					loadedList.push(props.data.name);
 					cmds.set(props.data.command, props); // Store the command prototype in the cmds collection
 				} catch (err) {
@@ -156,8 +159,8 @@ bot.on('message', async msg => {
 		let quotelist;
 
 		// Loop through possible prefixes to check if message is a command - this is a bit confusing because if the message is a command, then it is set to false (this is just so I could use .every())
-		const notCommand = [msg.server.altPrefix, bot.config.prefix, `<@${bot.user.id}>`, `<@!${bot.user.id}>`].every(prefix => {
-			if (msg.content.toLowerCase().startsWith(prefix)) { // Check if message starts with prefix
+		const notCommand = [bot.config.prefix, `<@${bot.user.id}>`, `<@!${bot.user.id}>`, msg.server.altPrefix].every(prefix => {
+			if (msg.content.toLowerCase().startsWith(prefix) && prefix) { // Check if message starts with prefix
 				command = msg.content.slice(prefix.length).trim().split(' ')[0]; // Get the name of the command
 				args = msg.content.slice(prefix.length).trim().split(' ').slice(1); // Get the args of the command
 				if (msg.server.quotes && prefix === msg.server.altPrefix) { // Quotes are only enabled if the server has an alt prefix (eg. A&S with "!" and NMS with "&")
@@ -189,7 +192,7 @@ bot.on('message', async msg => {
 			bot.commands.get('quote').func(msg, command, bot);
 		}
 		if (cmd && // If a command prototype is found and...
-			(cmd.data.anywhere || msg.elevation >= 3 || msg.server.permitChan.includes(msg.channel.id)) && // Command is flagged to be used anywhere/user has 3+ elevation level/is in a permitted channel and ...
+			((typeof cmd.data.anywhere === 'number' ? msg.elevation >= cmd.data.anywhere : cmd.data.anywhere) || msg.elevation >= 3 || msg.server.permitChan.includes(msg.channel.id)) && // Command is flagged to be used anywhere/user has 3+ elevation level/is in a permitted channel and ...
 			(!cmd.data.asOnly || ['263785005333872640', bot.config.debugServer].includes(msg.guild.id)) && // Command is not restricted to A&S server/message is in A&S server or the debug server and ...
 			(cmd.data.group === 'emotes' ? msg.server.emotes : true) && // If the command is in the "emotes" group that the server has emotes enabled, otherwise allow it and ...
 			(cmd.data.group === 'quotes' ? msg.server.quotes : true)) { // If the command is in the "quotes" group that the server has quotes enabled, otherwise allow it
@@ -255,6 +258,9 @@ bot.reload = command => {
 			const cmd = require(`./cmds/${command}.js`); // Load command
 			bot.commands.delete(command);
 			bot.commands.set(command, cmd); // Re-add to the bot's collection of commands
+			if (cmd.startup) {
+				cmd.startup(bot);
+			}
 			resolve();
 		} catch (err) {
 			reject(err);
@@ -272,6 +278,9 @@ bot.enable = command => {
 	return new Promise((resolve, reject) => {
 		try {
 			const cmd = require(`./cmds/${command}.js`); // Load command
+			if (cmd.startup) {
+				cmd.startup(bot);
+			}
 			bot.commands.set(command, cmd); // Add to bot's collection of commands
 			resolve();
 		} catch (err) {

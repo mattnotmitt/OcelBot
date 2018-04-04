@@ -13,49 +13,59 @@ const log = require('../lib/log.js')(exports.data.name);
 
 let repeat;
 
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 const T = new Twit(config.WTTwitter);
 
 const checkCommands = async bot => {
 	await TerminalWatch.sync();
-	(await TerminalWatch.findAll({attributes: ['command', 'message'], group: ['command', 'message']})).forEach(async watch => {
-		try {
-			const commandArr = watch.command.split(' ');
-			const resp = await wterminal(commandArr[0], commandArr.slice(1));
-			const statMsg = resp.data.redirect ? `[${resp.data.message.join('\n')}](${resp.data.redirect})` : `${resp.data.message.join('\n')}`;
-			if (statMsg === watch.message) {
-				return log.debug(`Command \`${watch.command}\` has not changed.`);
+	await Promise.all((await TerminalWatch.findAll({attributes: ['command', 'message'], group: ['command', 'message']})).map(async watch => {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const commandArr = watch.command.split(' ');
+				const resp = await wterminal(commandArr[0], commandArr.slice(1));
+				const statMsg = resp.data.redirect ? `[${resp.data.message.join('\n')}](${resp.data.redirect})` : `${resp.data.message.join('\n')}`;
+				if (statMsg === watch.message) {
+					log.debug(`Command \`${watch.command}\` has not changed.`);
+					return resolve(false);
+				}
+				log.info(`Command \`${watch.command} has changed.`);
+				const embed = new Discord.RichEmbed({
+					author: {
+						name: `The value of the ${watch.command} command has updated.`,
+						icon_url: 'https://cdn.artemisbot.uk/img/hexagon.png',
+						url: 'http://wakingtitan.com'
+					},
+					title: `**> \`${watch.command}\`**`,
+					description: `\`${statMsg}\``,
+					color: resp.success ? 0x00FC5D : 0xF00404,
+					footer: {
+						text: 'Watching Titan',
+						icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.png'
+					},
+					timestamp: moment().toISOString()
+				});
+				await T.post('statuses/update', {status: statMsg.length <= (204 - watch.command.length) ? `The wakingtitan.com ${watch.command} command has been updated to say "${statMsg}" #WakingTitan` : `The wakingtitan.com ${watch.command} command has been updated to say "${statMsg.slice(0, 203 - watch.command.length)}…" #WakingTitan`});
+				await Promise.all((await TerminalWatch.findAll({where: {command: watch.command}})).map(watcher =>
+					Promise.all([watcher.update({message: statMsg}), bot.channels.get(watcher.channelID).send('', {embed})])
+				));
+				resolve(true);
+			} catch (err) {
+				log.error(`Something went wrong: ${err}`);
+				reject(err);
 			}
-			log.info(`Command \`${watch.command} has changed.`);
-			const embed = new Discord.RichEmbed({
-				author: {
-					name: `The value of the ${watch.command} command has updated.`,
-					icon_url: 'https://cdn.artemisbot.uk/img/hexagon.png',
-					url: 'http://wakingtitan.com'
-				},
-				title: `**> \`${watch.command}\`**`,
-				description: `\`${statMsg}\``,
-				color: resp.success ? 0x00FC5D : 0xF00404,
-				footer: {
-					text: 'Watching Titan',
-					icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.png'
-				},
-				timestamp: moment().toISOString()
-			});
-			await T.post('statuses/update', {status: statMsg.length <= (204 - watch.command.length) ? `The wakingtitan.com ${watch.command} command has been updated to say "${statMsg}" #WakingTitan` : `The wakingtitan.com ${watch.command} command has been updated to say "${statMsg.slice(0, 203 - watch.command.length)}…" #WakingTitan`});
-			Promise.all((await TerminalWatch.findAll({where: {command: watch.command}})).map(watcher =>
-				Promise.all([watcher.update({message: statMsg}), bot.channels.get(watcher.channelID).send('', {embed})])
-			));
-		} catch (err) {
-			log.error(`Something went wrong: ${err}`);
-		}
-	});
+		});
+	}));
+	repeat = setTimeout(async () => {
+		checkCommands(bot);
+	}, 15 * 1000);
 };
 
 exports.watcher = bot => {
 	this.disable();
-	repeat = setInterval(async () => {
+	repeat = setTimeout(async () => {
 		checkCommands(bot);
-	}, 30 * 1000);
+	}, 15 * 1000);
 	log.verbose(`${exports.data.name} has initialised successfully.`);
 };
 
@@ -128,5 +138,5 @@ exports.list = async (msg, bot, args) => {
 };
 
 exports.disable = () => {
-	clearInterval(repeat);
+	clearTimeout(repeat);
 };
