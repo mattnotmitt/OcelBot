@@ -32,17 +32,6 @@ const genImage = (text, channelID, bot) => {
 			ctx.fillText(`at ${moment().utc().format('HH:mm')} UTC`.toUpperCase(), canvas.width / 2, 115);
 			const img = canvas.toBuffer();
 			jetpack.write(`/var/www/cdn/img/${channelID}.png`, img);
-			Const out = jetpack.createWriteStream(`/var/www/cdn/img/${channelID}.png`);
-			const stream = canvas.pngStream();
-			stream.on('data', chunk => {
-				out.write(chunk);
-			});
-			stream.on('end', () => {
-				resolve();
-			});
-			stream.on('err', err => {
-				reject(err);
-			}); 
 			const data = jetpack.read('cmdData.json', 'json');
 			if (data.update[channelID]) {
 				const message = await bot.channels.get(channelID).fetchMessage(data.update[channelID].id);
