@@ -116,7 +116,8 @@ exports.start = async (msg, bot, args) => {
 			twitterID: userId,
 			twitterName: name,
 			channelID: msg.channel.id,
-			replies: args[1]
+			replies: args[1],
+			filters: []
 		});
 		log.info(`Now watching ${name} in #${msg.channel.name} on ${msg.guild.name}.`);
 		await msg.reply(`I am now watching ${name} in this channel.`);

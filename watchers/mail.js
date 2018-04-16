@@ -71,7 +71,7 @@ exports.watcher = async bot => {
 				});
 				log.info(`New email received from "${mail.headers.from}" with subject "${mail.subject}".`);
 				let screenshotDone = true;
-				let screenshotURL = `https://cdn.artemisbot.uk/mail/${mail.from[0].name}-${mail.date.toISOString()}.jpg`;
+				let screenshotURL = encodeURI(`https://cdn.artemisbot.uk/mail/${mail.from[0].name}-${mail.date.toISOString()}.jpg`);
 				try {
 					await util.promisify(webshot)(mail.html, `/var/www/cdn/mail/${mail.from[0].name}-${mail.date.toISOString()}.jpg`, {
 						shotSize: {
@@ -89,7 +89,7 @@ exports.watcher = async bot => {
 					screenshotURL = '';
 					log.error(`Error when generating webshot screenshot: ${err.stack}`);
 				}
-
+				console.log(screenshotURL);
 				const embed = new Discord.RichEmbed({
 					author: {
 						name: `A new email has been received from ${mail.headers.from}`,
