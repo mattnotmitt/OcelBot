@@ -8,51 +8,9 @@ exports.data = {
 	permissions: 3
 };
 
-const moment = require('moment');
 const log = require('../lib/log.js')(exports.data.name);
+const ReactionHandler = require('../lib/reaction-handler');
 const Server = require('../lib/models/server');
-
-const reactionStuff = (qNum, msg, dm) => {
-	const setupEmbeds = [
-		{
-			embed: {
-				title: `Ocel Server setup for ${msg.guild.name}. Page 1/x`,
-				description: `Would you like to enable emotes on this server?`,
-				color: 2212073
-			},
-			type: 'y/n'
-		},
-		{
-			embed: {
-				title: `Ocel Server setup for ${msg.guild.name}. Page 2/x`,
-				description: `Would you like to enable quotes on this server?`,
-				color: 2212073
-			},
-			type: 'y/n'
-		}
-	];
-	const reactTypes = {
-		'y/n': {
-			'☑': true,
-			'❌': false
-		}
-	};
-	return new Promise(async (resolve, reject) => {
-		try {
-			const dMsg = await dm.send('', {embed: setupEmbeds[qNum].embed});
-			await Promise.all(Object.keys(reactTypes[setupEmbeds[qNum].type]).map(emote => dMsg.react(emote)));
-			const response = await dMsg.awaitReactions((react, user) => {
-				if (user.id === msg.author.id) {
-					return true;
-				}
-				return false;
-			}, {max: 1});
-			resolve(reactTypes[setupEmbeds[qNum].type][response.first().emoji.name]);
-		} catch (err) {
-			reject(err);
-		}
-	});
-};
 
 exports.func = async msg => {
 	try {
@@ -65,8 +23,22 @@ exports.func = async msg => {
 			});
 			await msg.reply('Setup will continue in DMs.');
 			const dm = await msg.author.createDM();
-			const emotes = await reactionStuff(0, msg, dm);
-			const quotes = await reactionStuff(1, msg, dm);
+			const emotes = (await ReactionHandler.reactQuery({
+				embed: {
+					title: `Ocel Server setup for ${msg.guild.name}. Page 1/x`,
+					description: `Would you like to enable emotes on this server?`,
+					color: 2212073
+				},
+				type: 'y/n'
+			}, msg.author.id, dm)).result;
+			const quotes = (await ReactionHandler.reactQuery({
+				embed: {
+					title: `Ocel Server setup for ${msg.guild.name}. Page 2/x`,
+					description: `Would you like to enable quotes on this server?`,
+					color: 2212073
+				},
+				type: 'y/n'
+			}, msg.author.id, dm)).result;
 			server.update({
 				emotes,
 				quotes
@@ -75,13 +47,13 @@ exports.func = async msg => {
 		} else {
 			msg.reply(':newspaper2: You don\'t have permission to use this command. You must have the Administrator permission on a server to configure its settings.');
 		}
-		/*
-		Let roleList = '';
+
+		let roleList = '';
 		msg.guild.roles.keyArray().forEach(key => roleList += `${msg.guild.roles.get(key).name}: ${key}\n`);
 		// Msg.reply(roleList);
 		const dm = await msg.author.createDM();
 		dm.send(`\`\`\`${roleList}\`\`\``);
-
+		/*
 		const server = await Server.findOne({
 			where: {
 				guildId: msg.guild.id
@@ -93,6 +65,6 @@ exports.func = async msg => {
 		*/
 		msg.reply('Server has been set up.');
 	} catch (err) {
-		log.error(`Something went wrong: ${err}`);
+		log.error(`Something went wrong: ${err.stack}`);
 	}
 };

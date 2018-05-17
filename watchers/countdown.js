@@ -113,10 +113,8 @@ exports.watcher = async bot => {
 	log.verbose(chalk.green(`${exports.data.name} has initialised successfully.`));
 	countdown = setInterval(async () => {
 		try {
-			const countdowns = await Countdown.all();
-			if (countdowns.length > 0) {
-				console.log(countdowns);
-				countdowns.forEach(async countdown => {
+			if (await Countdown.count() > 0) {
+				(await Countdown.all()).forEach(async countdown => {
 					try {
 						const timeDiff = moment(countdown.unixTime).diff();
 						const channel = bot.channels.get(countdown.channelID);

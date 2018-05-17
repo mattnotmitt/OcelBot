@@ -23,6 +23,7 @@ const TwitterMedia = require('twitter-media');
 const log = require('../lib/log.js')(exports.data.name);
 const config = require('../config.json');
 const Watcher = require('../lib/models/watcher');
+const ReactionHandler = require('../lib/reaction-handler');
 
 const T = new Twit(config.WTTwitter);
 
@@ -30,11 +31,10 @@ const T = new Twit(config.WTTwitter);
 
 const hasUpdate = {};
 let repeat;
-
 // ================| Helper Functions |================
 
 const clean = str => {
-	return str.replace(/<script[\s\S]*?>[\s\S]*?<\/script>|<link\b[^>]*>|Email:.+>|data-token=".+?"|email-protection#.+"|<div class="vc_row wpb_row vc_row-fluid no-margin parallax.+>|data-cfemail=".+?"|<!--[\s\S]*?-->|<meta name="fs-rendertime" content=".+?">/ig, '');
+	return str.replace(/<script[\s\S]*?>[\s\S]*?<\/script>|<link\b[^>]*>|Email:.+>|data-token=".+?"|email-protection#.+?"|<div class="vc_row wpb_row vc_row-fluid no-margin parallax.+>|data-cfemail=".+?"|<!--[\s\S]*?-->|<meta name="fs-rendertime" content=".+?">|e-mail.cloud/ig, '');
 };
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -112,7 +112,7 @@ const checkGlyphs = async bot => {
 	}
 };
 
-const checkExtranetStats = async req => {
+const checkExtranetStats = async (req, timestamp) => {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const wtSites = await Watcher.findOne({
@@ -135,15 +135,21 @@ const checkExtranetStats = async req => {
 				spreadsheetId: '1A8zODah54JUhO6ClFs8wNVvKLpLzWwm04lzOlS9mmAU',
 				worksheetId: 'od6'
 			});
-			const data = wtSites.data;
+			const data = wtSites.data || {
+				channels: [],
+				sites: {},
+				glyphs: [],
+				extranetMessages: {},
+				spreadsheetLine: 2
+			};
 			data.spreadsheetLine += 1;
 			const line = data.spreadsheetLine;
 			const lastSpreadsheetLine = (await ss.receive())[0][line - 1];
 			if (lastSpreadsheetLine['3'] !== stats[0] || lastSpreadsheetLine['5'] !== stats[1] || lastSpreadsheetLine['7'] !== stats[2] || lastSpreadsheetLine['9'] !== stats[3]) {
 				ss.add({
 					[line]: [[
-						moment().format('Do MMMM'),
-						moment().utc().format('hh:mmA'),
+						timestamp.utc().format('Do MMMM'),
+						timestamp.utc().format('hh:mmA'),
 						stats[0],
 						`=C${line} - C${line - 1}`,
 						stats[1],
@@ -154,8 +160,7 @@ const checkExtranetStats = async req => {
 						`=I${line} - I${line - 1}`
 					]]
 				});
-				await wtSites.update({data});
-				await ss.send();
+				await Promise.all([wtSites.update({data}), ss.send()]);
 				resolve('StatsChange');
 			} else {
 				resolve('NoChange');
@@ -169,23 +174,25 @@ const checkExtranetStats = async req => {
 const checkSite = async (site, bot) => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			const wtSites = await Watcher.findOne({
+			let wtSites = await Watcher.findOne({
 				where: {
 					watcherName: 'wt-sites'
 				}
 			});
-			const data = wtSites.data || {
+			let data = wtSites.data || {
 				channels: [],
 				sites: {},
-				glyphs: []
+				glyphs: [],
+				extranetMessages: {}
 			};
 			const reqOpts = {headers: {}};
 			if (site === 'https://wakingtitan.com') {
 				reqOpts.headers.Cookie = 'terminal=%5B%22atlas%22%2C%22csd%22%2C%222fee0b5b-6312-492a-8308-e7eec4287495%22%2C%2205190fed-b606-4321-a52e-c1d1b39f2861%22%2C%22f7c05c4f-18a5-47a7-bd8e-804347a15f42%22%5D; archive=%5B%229b169d05-6b0b-49ea-96f7-957577793bef%22%2C%2267e3b625-39c0-4d4c-9241-e8ec0256b546%22%2C%224e153ce4-0fec-406f-aa90-6ea62e579369%22%2C%227b9bca5c-43ba-4854-b6b7-9fffcf9e2b45%22%2C%222f99ac82-fe56-43ab-baa6-0182fd0ed020%22%2C%22b4631d12-c218-4872-b414-9ac31b6c744e%22%2C%227b34f00f-51c3-4b6c-b250-53dbfaa303ef%22%2C%2283a383e2-f4fc-4d8d-905a-920057a562e7%22%2C%227ed354ba-b03d-4c56-ade9-3655aff45179%22%5D';
-			} else if (site === 'https://extranet.ware-tech.cloud') {
+			} else if (site === 'https://extranet.ware-tech.cloud' || site === 'https://extranet.ware-tech.cloud/documents' || site === 'https://extranet.ware-tech.cloud/taskmanager' || site === 'https://extranet.ware-tech.cloud/supplyrequest') {
 				reqOpts.headers.Cookie = 'token=fd91b1c75a6857e7fd00caf61ffc0181c1492096';
 			}
 			const req = await snek.get(site, reqOpts); // Req.body is a buffer for unknown reasons
+			const timestamp = moment();
 			const pageCont = clean(req.body.toString());
 			const oldCont = clean(jetpack.read(`./watcherData/${data.sites[site]}-latest.html`));
 			if (pageCont.replace(/\s/g, '').replace(/>[\s]+</g, '><').replace(/"\s+\//g, '"/') === oldCont.replace(/\s/g, '').replace(/>[\s]+</g, '><').replace(/"\s+\//g, '"/')) {
@@ -221,7 +228,7 @@ const checkSite = async (site, bot) => {
 			}
 			const embed = new Discord.RichEmbed({
 				color: 0x993E4D,
-				timestamp: moment().toISOString(),
+				timestamp: timestamp.toISOString(),
 				description: embedDescription,
 				author: {
 					name: `${site.split('/').splice(2).join('/')} has updated`,
@@ -233,15 +240,18 @@ const checkSite = async (site, bot) => {
 					text: 'Watching Titan'
 				}
 			});
+			let sendTweet = true;
+			let extranet = false;
 			if (site === 'https://extranet.ware-tech.cloud') {
 				try {
 					log.verbose('Checking WARE Extranet stats.');
-					const statsResult = await checkExtranetStats(req2);
+					const statsResult = await checkExtranetStats(req2, timestamp);
 					if (statsResult === 'StatsChange') {
 						log.info('Confirmed change to WARE Extranet stats, suppressing normal broadcast.');
 						embed.setAuthor(`WARE Developer Dashboard stats have updated!`, 'https://cdn.artemisbot.uk/img/hexagon.png', site);
 						embed.setDescription(`Stat updates can be seen [here](https://docs.google.com/spreadsheets/d/1A8zODah54JUhO6ClFs8wNVvKLpLzWwm04lzOlS9mmAU).\n${embedDescription}`);
-						status = `WARE Developer Dashboard stats have updated! See a diff of the page here: ${res.stdout.split(' ').pop().slice(0, -1)} \nSee stats here: https://docs.google.com/spreadsheets/d/1A8zODah54JUhO6ClFs8wNVvKLpLzWwm04lzOlS9mmAU #WakingTitan`;
+						sendTweet = false;
+						extranet = true;
 					} else {
 						log.verbose('No change to WARE Extranet stats. Proceeding normally.');
 					}
@@ -252,17 +262,90 @@ const checkSite = async (site, bot) => {
 			if (site === 'https://wakingtitan.com') {
 				checkGlyphs(bot);
 			}
-			await T.post('statuses/update', {
-				status
+			wtSites = await Watcher.findOne({
+				where: {
+					watcherName: 'wt-sites'
+				}
 			});
-			await Promise.all(data.channels.map(channel =>
-					bot.channels.get(channel).send('', {embed})
-			));
-			await snek.get(`https://web.archive.org/save/${site}`);
+			data = wtSites.data || {
+				channels: [],
+				sites: {},
+				glyphs: [],
+				extranetMessages: {}
+			};
+			await wtSites.update({data});
 			jetpack.remove(`./watcherData/${data.sites[site]}-temp.html`);
 			jetpack.write(`./watcherData/${data.sites[site]}-latest.html`, req.body.toString());
 			jetpack.write(`./watcherData/${data.sites[site]}-logs/${strftime('%F - %H-%M-%S')}.html`, req.body.toString());
-			return resolve(hasUpdate[site] = true);
+			if (!extranet) {
+				let doPost = true;
+				if (['https://www.nomanssky.com', 'https://extranet.ware-tech.cloud'].includes(site)) {
+					doPost = false;
+					const reactQueries = config.helpers.filter(async helperID => {
+						const helper = await bot.fetchUser(helperID);
+						if (['dnd', 'offline'].includes(helper.presence.status)) {
+							return false;
+						}
+						return true;
+					}).map(async helperID => {
+						const helper = await bot.fetchUser(helperID);
+						const dm = await helper.createDM();
+						log.verbose(`Contacting ${helper.username}#${helper.discriminator}.`);
+						return ReactionHandler.reactQuery({
+							embed: {
+								author: {
+									icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.png',
+									name: 'Watching Titan'
+								},
+								title: `${site} update confirmation`,
+								description: `${embedDescription}\nDo you think this is an important update (please, please, please, check the diff if it exists)? Please vote using the reactions below.`,
+								color: 2212073
+							},
+							type: 'y/n'
+						}, helperID, dm);
+					});
+					log.verbose(`Consulting ${reactQueries.length} helpers.`);
+					const raceResult = await Promise.race(reactQueries);
+					doPost = raceResult.result;
+					log.verbose(`Race resolved, result ${raceResult.result}.`);
+					const raceWinner = await bot.fetchUser(raceResult.userID);
+					config.helpers.forEach(async helperID => {
+						const helper = await bot.fetchUser(helperID);
+						if (['dnd', 'offline'].includes(helper.presence.status)) {
+							return;
+						}
+						const dm = await helper.createDM();
+						dm.send(`The above update has been ${raceResult.result ? 'APPROVED' : 'DENIED'} by ${raceWinner.username}#${raceWinner.discriminator}. Broadcast ${raceResult.result ? 'going ahead.' : 'suppressed.'}`);
+					});
+				}
+
+				if (!doPost) {
+					return resolve(hasUpdate[site] = false);
+				}
+
+				await Promise.all(data.channels.map(async channel => {
+					const m = await bot.channels.get(channel).send('', {embed});
+					try {
+						if (extranet) {
+							if (data.extranetMessages[channel]) {
+								log.verbose('Deleting previous update message!');
+								(await bot.channels.get(channel).fetchMessage(data.extranetMessages[channel])).delete();
+							}
+							data.extranetMessages[channel] = m.id;
+						}
+					} catch (err) {
+						log.warn(`Unable to delete old update message for extranet: ${err.stack}`);
+					}
+				}));
+				if (sendTweet) {
+					await T.post('statuses/update', {
+						status
+					});
+				}
+				await snek.get(`https://web.archive.org/save/${site}`);
+				return resolve(hasUpdate[site] = true);
+			}
+			return resolve(hasUpdate[site] = false);
 		} catch (err) {
 			if (err.status) {
 				log.error(`Failed to check site ${site}. ${err.status}: ${err.statusText}`);
@@ -285,19 +368,20 @@ const querySites = async bot => {
 	const data = wtSites.data || {
 		channels: [],
 		sites: {},
-		glyphs: []
+		glyphs: [],
+		extranetMessages: {}
 	};
 	try {
 		await Promise.all(Object.keys(data.sites).map(site => checkSite(site, bot)));
 		repeat = setTimeout(async () => {
 			querySites(bot);
-		}, 20 * 1000);
+		}, 30 * 1000);
 	} catch (err) {
 		if (err.status) {
-			log.warn(`Failed to access a site. Will retry in 20 seconds.`);
+			log.warn(`Failed to access a site. Will retry in 30 seconds.`);
 			repeat = setTimeout(async () => {
 				querySites(bot);
-			}, 20 * 1000);
+			}, 30 * 1000);
 		} else {
 			log.error(`Site query failed. ${exports.data.name} has been disabled for safety.`);
 			bot.channels.get('338712920466915329').send(`Site query failed, ${exports.data.name} disabled.`);
@@ -325,7 +409,8 @@ exports.start = async (msg, bot, args) => {
 	const data = wtSites.data || {
 		channels: [],
 		sites: {},
-		glyphs: []
+		glyphs: [],
+		extranetMessages: {}
 	};
 	if (args[0]) {
 		if (!args[1]) {
