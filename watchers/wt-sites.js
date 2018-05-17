@@ -1,4 +1,4 @@
-// ================| Initialisation |================
+// ===============| Initialisation |===============
 
 exports.data = {
 	name: 'Waking Titan Sites & Glyphs',
@@ -278,19 +278,30 @@ const checkSite = async (site, bot) => {
 			jetpack.write(`./watcherData/${data.sites[site]}-latest.html`, req.body.toString());
 			jetpack.write(`./watcherData/${data.sites[site]}-logs/${strftime('%F - %H-%M-%S')}.html`, req.body.toString());
 			if (!extranet) {
+				const maxListeners = bot.getMaxListeners();
 				let doPost = true;
 				if (['https://www.nomanssky.com', 'https://extranet.ware-tech.cloud'].includes(site)) {
 					doPost = false;
-					const reactQueries = config.helpers.filter(async helperID => {
-						const helper = await bot.fetchUser(helperID);
-						if (['dnd', 'offline'].includes(helper.presence.status)) {
-							return false;
-						}
-						return true;
-					}).map(async helperID => {
-						const helper = await bot.fetchUser(helperID);
+					const helpers = await Promise.all(config.helpers.map(helperID => {
+						return bot.fetchUser(helperID);
+					}));4
+					const onlineHelpers = helpers.filter(helper => {
+						const result = () => {
+							if (['dnd', 'offline'].includes(helper.presence.status)) {
+								log.debug(`Checking ${helper.username}#${helper.discriminator}. User ${helper.presence.status}, not contacting.`);
+								return false;
+							}
+							log.debug(`Checking ${helper.username}#${helper.discriminator}. User ${helper.presence.status}, contacting.`);
+							return true;
+						};
+						//console.log(result());
+						return result();
+					});
+					//console.log(onlineHelpers);
+					const reactQueries = onlineHelpers.map(async helper => {
+						bot.setMaxListeners(maxListeners + 1);
 						const dm = await helper.createDM();
-						log.verbose(`Contacting ${helper.username}#${helper.discriminator}.`);
+						log.debug(`Contacting ${helper.username}#${helper.discriminator}.`);
 						return ReactionHandler.reactQuery({
 							embed: {
 								author: {
@@ -298,17 +309,18 @@ const checkSite = async (site, bot) => {
 									name: 'Watching Titan'
 								},
 								title: `${site} update confirmation`,
-								description: `${embedDescription}\nDo you think this is an important update (please, please, please, check the diff if it exists)? Please vote using the reactions below.`,
+								description: `${embedDescription}\nDo you think this is an important update? (please, please, please, check the diff if it exists.) Please vote using the reactions below.`,
 								color: 2212073
 							},
 							type: 'y/n'
-						}, helperID, dm);
+						}, helper.id, dm);
 					});
-					log.verbose(`Consulting ${reactQueries.length} helpers.`);
+					log.verbose(`Consulting ${reactQueries.length} helpers: ${onlineHelpers.map(helper => `${helper.username}#${helper.discriminator}`).join(', ')}.`);
 					const raceResult = await Promise.race(reactQueries);
+					bot.setMaxListeners(maxListeners);
 					doPost = raceResult.result;
-					log.verbose(`Race resolved, result ${raceResult.result}.`);
 					const raceWinner = await bot.fetchUser(raceResult.userID);
+					log.verbose(`Race resolved by ${raceWinner.username}#${raceWinner.discriminator}, result ${raceResult.result ? 'APPROVED' : 'DENIED'}.`);
 					config.helpers.forEach(async helperID => {
 						const helper = await bot.fetchUser(helperID);
 						if (['dnd', 'offline'].includes(helper.presence.status)) {
