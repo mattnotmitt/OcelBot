@@ -65,7 +65,7 @@ const startStream = async bot => {
 
 				await Promise.all(watchers.map(watch => {
 					log.verbose(`Pass reply: ${!tweet.in_reply_to_user_id || watch.replies} | Pass filter: ${watch.filters.length > 0 ? watch.filters.every(filter => he.decode(tweet.text).includes(filter)) : true} | Send: ${(!tweet.in_reply_to_user_id || watch.replies) && (watch.filters.length > 0 ? watch.filters.every(filter => he.decode(tweet.text).includes(filter)) : true)}`);
-					if ((!tweet.in_reply_to_user_id || watch.replies) && (watch.filters.length > 0 ? watch.filters.every(filter => he.decode(tweet.text).includes(filter)) : true)) {
+					if ((tweet.in_reply_to_user_id ? (tweet.in_reply_to_user_id === watch.twitterID || watch.replies) : true) && (watch.filters.length > 0 ? watch.filters.every(filter => he.decode(tweet.text).includes(filter)) : true)) {
 						return bot.channels.get(watch.channelID).send('', {embed});
 					} else if (watch.filters.length > 0) {
 						return log.verbose('Did not match filters for this channel\'s watcher.');

@@ -71,7 +71,7 @@ const checkGlyphs = async bot => {
 		}
 		for (let i = 0; i < glyphs.length; i++) {
 			if (glyphs.sort()[i] !== data.glyphs[i]) {
-				log.info('New glyph at wakingtitan.com');
+				log.info(`New glyph (${data.glyphs[i]}) at wakingtitan.com`);
 				const embed = new Discord.RichEmbed({
 					color: 0x993E4D,
 					timestamp: moment().toISOString(),
@@ -192,11 +192,12 @@ const checkSite = async (site, bot) => {
 				reqOpts.headers.Cookie = 'token=fd91b1c75a6857e7fd00caf61ffc0181c1492096';
 			}
 			const req = await snek.get(site, reqOpts); // Req.body is a buffer for unknown reasons
+
 			const timestamp = moment();
 			const pageCont = clean(req.body.toString());
 			const oldCont = clean(jetpack.read(`./watcherData/${data.sites[site]}-latest.html`));
 			if (pageCont.replace(/\s/g, '').replace(/>[\s]+</g, '><').replace(/"\s+\//g, '"/') === oldCont.replace(/\s/g, '').replace(/>[\s]+</g, '><').replace(/"\s+\//g, '"/')) {
-				log.debug(`No change on ${site}.`);
+				// Log.debug(`No change on ${site}.`);
 				return resolve(hasUpdate[site] = false);
 			}
 			log.verbose(`There's been a possible change on ${site}`);
@@ -247,13 +248,13 @@ const checkSite = async (site, bot) => {
 					log.verbose('Checking WARE Extranet stats.');
 					const statsResult = await checkExtranetStats(req2, timestamp);
 					if (statsResult === 'StatsChange') {
-						log.info('Confirmed change to WARE Extranet stats, suppressing normal broadcast.');
+						log.verbose('Confirmed change to WARE Extranet stats, suppressing normal broadcast.');
 						embed.setAuthor(`WARE Developer Dashboard stats have updated!`, 'https://cdn.artemisbot.uk/img/hexagon.png', site);
 						embed.setDescription(`Stat updates can be seen [here](https://docs.google.com/spreadsheets/d/1A8zODah54JUhO6ClFs8wNVvKLpLzWwm04lzOlS9mmAU).\n${embedDescription}`);
 						sendTweet = false;
 						extranet = true;
 					} else {
-						log.verbose('No change to WARE Extranet stats. Proceeding normally.');
+						log.info('No change to WARE Extranet stats. Proceeding normally.');
 					}
 				} catch (err) {
 					log.error(`Failed to check extranet stats for updates! Proceeding normally. Error: ${err.stack}`);
@@ -284,7 +285,7 @@ const checkSite = async (site, bot) => {
 					doPost = false;
 					const helpers = await Promise.all(config.helpers.map(helperID => {
 						return bot.fetchUser(helperID);
-					}));4
+					}));
 					const onlineHelpers = helpers.filter(helper => {
 						const result = () => {
 							if (['dnd', 'offline'].includes(helper.presence.status)) {
@@ -294,10 +295,10 @@ const checkSite = async (site, bot) => {
 							log.debug(`Checking ${helper.username}#${helper.discriminator}. User ${helper.presence.status}, contacting.`);
 							return true;
 						};
-						//console.log(result());
+						// Console.log(result());
 						return result();
 					});
-					//console.log(onlineHelpers);
+					// Console.log(onlineHelpers);
 					const reactQueries = onlineHelpers.map(async helper => {
 						bot.setMaxListeners(maxListeners + 1);
 						const dm = await helper.createDM();
@@ -384,16 +385,20 @@ const querySites = async bot => {
 		extranetMessages: {}
 	};
 	try {
-		await Promise.all(Object.keys(data.sites).map(site => checkSite(site, bot)));
+		log.debug(`Checking sites: ${Object.values(data.sites).join(', ')}`);
+		const result = await Promise.all(Object.keys(data.sites).map(site => checkSite(site, bot)));
+		if (!result.includes(true)) {
+			log.debug('No changes on any sites.');
+		}
 		repeat = setTimeout(async () => {
 			querySites(bot);
-		}, 30 * 1000);
+		}, 90 * 1000);
 	} catch (err) {
 		if (err.status) {
-			log.warn(`Failed to access a site. Will retry in 30 seconds.`);
+			log.warn(`Failed to access a site. Will retry in 90 seconds.`);
 			repeat = setTimeout(async () => {
 				querySites(bot);
-			}, 30 * 1000);
+			}, 90 * 1000);
 		} else {
 			log.error(`Site query failed. ${exports.data.name} has been disabled for safety.`);
 			bot.channels.get('338712920466915329').send(`Site query failed, ${exports.data.name} disabled.`);

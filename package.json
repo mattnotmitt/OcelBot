@@ -25,6 +25,7 @@
         "request": "^2.83.0",
         "request-promise-native": "^1.0.4",
         "sequelize": "^4.29.0",
+        "skype-http": "0.0.15",
         "snekfetch": "^3.6.1",
         "strftime": "^0.10.0",
         "twit": "^2.2.9",
