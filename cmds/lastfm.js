@@ -193,72 +193,78 @@ const LastFM = {
 	},
 
 	_getTop10: async (msg, args, bot) => {
-		const userData = await LastFM._getUserData(msg.author.id);
-		if (args[1] === 'help') {
-			msg.channel.stopTyping(true);
-			await msg.reply(`Parameters for this sub-command (\`*\` denotes the default if omitted):
-**type:** \`albums | artists | tracks (*)\`
-**timescale:** \`overall (*) | 7day | 1month | 3month | 6month | 12month\``);
-		} else {
-			const typeOptions = ['albums', 'artists', 'tracks'];
-			const timescaleOptions = {
-				overall: 'overall',
-				'7day': 'in the past seven days',
-				'1month': 'in the past month',
-				'3month': 'in the past three months',
-				'6month': 'in the past six months',
-				'12month': 'in the past year'
-			};
-			let user = userData.lfmUsername;
-			let type = args[1] || 'tracks';
-			let timescale = args[2] || 'overall';
-			if (!typeOptions.includes(type)) {
-				if ((await LastFM._r(bot)(`&method=user.getinfo&user=${args[1]}`)).message === 'User not found') {
-					msg.channel.stopTyping(true);
-					return msg.reply(`${args[1]} is an invalid user or top 10 type. Please select a valid last.fm user or choose a type from \`${typeOptions.join(' | ')}`);
-				}
-				user = args[1];
-				type = args[2] || 'tracks';
+		try {
+			const userData = await LastFM._getUserData(msg.author.id);
+			if (args[1] === 'help') {
+				msg.channel.stopTyping(true);
+				await msg.reply(`Parameters for this sub-command (\`*\` denotes the default if omitted):
+	**type:** \`albums | artists | tracks (*)\`
+	**timescale:** \`overall (*) | 7day | 1month | 3month | 6month | 12month\``);
+			} else {
+				const typeOptions = ['albums', 'artists', 'tracks'];
+				const timescaleOptions = {
+					overall: 'overall',
+					'7day': 'in the past seven days',
+					'1month': 'in the past month',
+					'3month': 'in the past three months',
+					'6month': 'in the past six months',
+					'12month': 'in the past year'
+				};
+				let user = userData.lfmUsername;
+				let type = args[1] || 'tracks';
+				let timescale = args[2] || 'overall';
 				if (!typeOptions.includes(type)) {
+					if ((await LastFM._r(bot)(`&method=user.getinfo&user=${args[1]}`)).message === 'User not found') {
+						msg.channel.stopTyping(true);
+						return msg.reply(`${args[1]} is an invalid user or top 10 type. Please select a valid last.fm user or choose a type from \`${typeOptions.join(' | ')}`);
+					}
+					user = args[1];
+					type = args[2] || 'tracks';
+					if (!typeOptions.includes(type)) {
+						msg.channel.stopTyping(true);
+						return msg.reply(`${type} is an invalid top10 type. Please choose one from \`${typeOptions.join(' | ')}\``);
+					}
+					timescale = args[3] || 'overall';
+				}
+				if (!Object.keys(timescaleOptions).includes(timescale)) {
 					msg.channel.stopTyping(true);
-					return msg.reply(`${type} is an invalid top10 type. Please choose one from \`${typeOptions.join(' | ')}\``);
+					return msg.reply(`${timescale} is an invalid top10 timescale. Please choose one from \`${Object.keys(timescaleOptions).join(' | ')}\``);
 				}
-				timescale = args[3] || 'overall';
-			}
-			if (!Object.keys(timescaleOptions).includes(timescale)) {
+				log.debug('Found user.');
+				if ((await LastFM._r(bot)(`&method=user.getinfo&user=${user}`)).message === 'User not found') {
+					msg.channel.stopTyping(true);
+					return msg.reply('Specified user does not exist.');
+				}
+				const top10 = await LastFM._r(bot)(`&method=user.gettop${type}&user=${user}&period=${timescale}&limit=10`);
+				const embed = new Discord.RichEmbed({
+					author: {
+						name: `Top 10 ${type} ${timescaleOptions[timescale]} for ${user}`,
+						icon_url: 'https://cdn.artemisbot.uk/img/lastfm.png',
+						url: `https://last.fm/user/${user}`
+					},
+					color: 0xD51007,
+					footer: {
+						text: `Powered by the last.fm API. Took ${moment().diff(msg.createdAt)} ms.`
+					}
+				});
+				const goodData = top10[`top${type}`][type.slice(0, -1)];
+				for (const thing of goodData) {
+					const name = type === 'artists' ? `${thing.name}` : `${thing.name} - ${thing.artist.name}`;
+					let inline = true;
+					if (goodData.indexOf(thing) < (goodData.length >= 10 ? 9 : goodData.length)) {
+						const nextName = type === 'artists' ? `${goodData[goodData.indexOf(thing) + 1].name}` : `${goodData[goodData.indexOf(thing) + 1].name} - ${goodData[goodData.indexOf(thing) + 1].artist.name}`;
+						inline = name.length < 30 ? nextName.length < 60 : nextName.length < 40;
+					}
+					// Console.log(inline);
+					embed.addField(name, `[Played ${thing.playcount} ${thing.playcount === 1 ? 'time' : 'times'}](${LastFM._safeLink(thing.url)})`, inline);
+				}
 				msg.channel.stopTyping(true);
-				return msg.reply(`${timescale} is an invalid top10 timescale. Please choose one from \`${Object.keys(timescaleOptions).join(' | ')}\``);
+				await msg.channel.send('', embed);
 			}
-			log.debug('Found user.');
-			if ((await LastFM._r(bot)(`&method=user.getinfo&user=${user}`)).message === 'User not found') {
-				msg.channel.stopTyping(true);
-				return msg.reply('Specified user does not exist.');
-			}
-			const top10 = await LastFM._r(bot)(`&method=user.gettop${type}&user=${user}&period=${timescale}&limit=10`);
-			const embed = new Discord.RichEmbed({
-				author: {
-					name: `Top 10 ${type} ${timescaleOptions[timescale]} for ${user}`,
-					icon_url: 'https://cdn.artemisbot.uk/img/lastfm.png',
-					url: `https://last.fm/user/${user}`
-				},
-				color: 0xD51007,
-				footer: {
-					text: `Powered by the last.fm API. Took ${moment().diff(msg.createdAt)} ms.`
-				}
-			});
-			const goodData = top10[`top${type}`][type.slice(0, -1)];
-			for (const thing of goodData) {
-				const name = type === 'artists' ? `${thing.name}` : `${thing.name} - ${thing.artist.name}`;
-				let inline = true;
-				if (goodData.indexOf(thing) < 9) {
-					const nextName = type === 'artists' ? `${goodData[goodData.indexOf(thing) + 1].name}` : `${goodData[goodData.indexOf(thing) + 1].name} - ${goodData[goodData.indexOf(thing) + 1].artist.name}`;
-					inline = name.length < 30 ? nextName.length < 60 : nextName.length < 40;
-				}
-				// Console.log(inline);
-				embed.addField(name, `[Played ${thing.playcount} ${thing.playcount === 1 ? 'time' : 'times'}](${LastFM._safeLink(thing.url)})`, inline);
-			}
-			msg.channel.stopTyping(true);
-			await msg.channel.send('', embed);
+		} catch (err) {
+			await msg.channel.stopTyping(true);
+			msg.reply(`Couldn't get top10.`);
+			log.error(`Couldn't get top10: ${err.stack}`);
 		}
 	},
 
