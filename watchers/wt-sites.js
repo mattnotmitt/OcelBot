@@ -191,7 +191,7 @@ const checkSite = async (site, bot) => {
 			} else if (site === 'https://extranet.ware-tech.cloud' || site === 'https://extranet.ware-tech.cloud/documents' || site === 'https://extranet.ware-tech.cloud/taskmanager' || site === 'https://extranet.ware-tech.cloud/supplyrequest') {
 				reqOpts.headers.Cookie = 'token=fd91b1c75a6857e7fd00caf61ffc0181c1492096';
 			}
-			const req = await snek.get(site, reqOpts); // Req.body is a buffer for unknown reasons
+			const req = await snek.get(`${site}?_=${Math.random()}`, reqOpts); // Req.body is a buffer for unknown reasons
 
 			const timestamp = moment();
 			const pageCont = clean(req.body.toString());
@@ -205,7 +205,7 @@ const checkSite = async (site, bot) => {
 				return resolve(log.warn(`${site} only just had an update, there's probably a bug.`));
 			}
 			await delay(2000);
-			const req2 = await snek.get(site, reqOpts);
+			const req2 = await snek.get(`${site}?_=${Math.random()}`, reqOpts);
 			const pageCont2 = clean(req2.body.toString());
 			if (pageCont2 !== pageCont) {
 				log.verbose('Update was only temporary. Rejected broadcast protocol.');

@@ -9,8 +9,6 @@ exports.data = {
 };
 
 const jetpack = require('fs-jetpack');
-const uuidv4 = require('uuid/v4');
-const request = require('request-promise-native');
 const snek = require('snekfetch');
 
 const log = require('../lib/log.js')(exports.data.name);
@@ -22,7 +20,6 @@ exports.func = async (msg, args) => {
 		const guildId = msg.server.sister || msg.guild.id;
 		const name = args[0];
 		const url = args[1];
-		let ext;
 		if (args.length === 0) {
 			return msg.reply(`You didn't include a link or a emote name! The proper syntax for "${this.data.name}" is \`${this.data.syntax}\`.`);
 		}
@@ -33,31 +30,16 @@ exports.func = async (msg, args) => {
 			return msg.reply('That emote already exists!');
 		}
 		log.info(`${msg.member.displayName} (${msg.author.username}#${msg.author.discriminator}) has added emote ${name} in #${msg.channel.name} on ${msg.guild.name}.`);
-		switch (url.split('.').slice(-1)[0]) {
-			case 'png':
-				ext = '.png';
-				break;
-			case 'gif':
-				ext = '.gif';
-				break;
-			case 'jpg':
-				ext = '.jpg';
-				break;
-			case 'jpeg':
-				ext = '.jpeg';
-				break;
-			default:
-				return msg.reply('This link is not png, jpg, jpeg or gif.');
-		}
-		const filename = name + ext;
 		const response = await snek.get(url);
+		const ext = response.headers['content-type'].match(/image\/(png|gif|jpg|jpeg)/)[1];
 		if (response.status !== 200) {
 			msg.reply(`That link is invalid - Status Code: ${response.status}.`);
-		} else if (!response.headers['content-type'].match(/image\/(png|gif|jpg|jpeg)/)) {
+		} else if (!['png', 'gif', 'jpg', 'jpeg'].includes(ext)) {
 			msg.reply(`Invalid content-type: \`\`\`${response.headers['content-type']}\`\`\``);
-		} else if (response.headers['content-length'] / (1024 * 1024) > 2) {
+		} else if (response.headers['content-length'] / (1024 * 1024) > 5) {
 			msg.reply(`That file is too big (${Number(response.headers['content-length'] / (1024 * 1024)).toPrecision(3)} MB)!`);
 		} else {
+			const filename = `${name}.${ext}`;
 			jetpack.dir(`./emotes/${guildId}`);
 			jetpack.write(`./emotes/${guildId}/${filename}`, response.body);
 			Emote.create({
