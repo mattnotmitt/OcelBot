@@ -2,18 +2,16 @@ exports.data = {
 	name: 'Sat-Com Uplink Sleepers Sleeper Commands',
 	command: 'sleepers',
 	description: 'Checks value of a Sat-Com Uplink Sleeper.',
-	group: 'WakingTitan', 
+	group: 'WakingTitan',
 	syntax: 'sleepers [sleeper-name]',
 	author: 'Sqbika: sqbika@gmail.com',
 	anywhere: 2,
 	permissions: 0
 };
 
-const request = require('request-promise-native');
 const moment = require('moment');
-const log = require('../lib/log.js')(exports.data.name);
-const sleepersDB = require('../lib/sleepers.json');
 const snek = require('snekfetch');
+const log = require('../lib/log.js')(exports.data.name);
 
 const cache = {};
 
@@ -28,7 +26,7 @@ exports.func = async (msg, args) => {
 		if (cache[args.join(' ')]) {
 			if (moment().diff(moment.unix(cache[args.join(' ')].last), 'minutes') >= 1) {
 				log.debug('Cached for too long, requesting.');
-				resp = await this.runCommand(args[0], args.slice(1));
+				resp = await this.runCommand(args);
 				cache[args.join(' ')] = {resp, last: moment().unix()};
 			} else {
 				log.debug('Not cached for long enough');
@@ -36,27 +34,31 @@ exports.func = async (msg, args) => {
 			}
 		} else {
 			log.debug('Not cached before - requesting.');
-			resp = await this.runCommand(args[0], args.slice(1));
+			resp = await this.runCommand(args);
 			cache[args.join(' ')] = {resp, last: moment().unix()};
 		}
 		msg.channel.stopTyping(true);
+		if (!(resp instanceof Object)) {
+			return msg.reply('Sleeper not found, or an error occurred.');
+		}
 		msg.channel.send('', {embed: {
-			title: `Sleeper ${resp.name}`,
-            description: `ID: ${resp.id}
-Unlocked: ${resp.is_memory_unlocked ? "Yes" : "No"}
-Done: ${resp.is_extracted ? "Yes" : "No"}
-[Patient file](${resp.patient_file})
-[Reddit thread](${resp.patient_support_url})
-[CSD Thread](${resp.csd_intervention_url})
-            `,
+			title: `Sleeper ${resp.name} - Status: ${resp.status}`,
+			description: `ID: ${resp.id}
+Unlocked: ${resp.is_memory_unlocked === '1' ? 'Yes' : 'No'}
+Extracted: ${resp.is_extracted === '1' ? 'Yes' : 'No'}
+${resp.patient_file ? `[Patient file](${resp.patient_file})\n` : ''}${resp.patient_support_url ? `[Reddit thread](${resp.patient_support_url})\n` : ''}${resp.csd_intervention_url ? `[CSD Thread](${resp.csd_intervention_url})\n` : ''}`,
 			color: 0x00FC5D,
 			footer: {
 				icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.png',
 				text: 'SatCom-70 Uplink Sleepers'
 			},
 			timestamp: moment().toISOString(),
-            url: 'http://uplink.satcom-70.com/dashboard/',
-            fields: resp.blocks.map(block => {return {name: block.svg_element_name, value: "Corrupted: " + (block.is_corrupted ? "Yes" : "No") + "\nUnlocked: " + (block.is_active ? "Yes" : "No")}})
+			url: 'http://uplink.satcom-70.com/dashboard/',
+			fields: resp.blocks ? resp.blocks.map(block => {
+				return {name: `${block.svg_element_name.split('_').map(word => {
+					return word.toUpperCase();
+				}).join(' ')} ${block.is_active ? '✅' : '❌'}`, value: (block.label.length > 0 ? `**${block.label}**\n` : '') + 'Corrupted: ' + (block.is_corrupted === '1' ? 'Yes' : 'No'), inline: true};
+			}) : []
 		}});
 	} catch (err) {
 		log.error(`Something went wrong: ${err.stack}`);
@@ -65,25 +67,37 @@ Done: ${resp.is_extracted ? "Yes" : "No"}
 	}
 };
 
-exports.runCommand = async (command, params) => {
-		try {
-            var sleeperData = await snek.get('http://api.satcom-70.com/dash/sleeper/' + this.resolveSleeper(params[0]).id);
-            return JSON.parse(sleeperData.body).sleeper;
-		} catch (err) {
-            log.error(`Uh-oh. Sqbika can't code...: ${err.stack}`);
-            return "error"; //How to throw the staticly typed funcional Promise structure out of the window and set everything on fire with oil.
+exports.runCommand = async params => {
+	try {
+		const sleeper = await this.resolveSleeper(params.join(' '));
+		// Console.log(sleeper);
+		if (!sleeper) {
+			return 'SleeperNotFound';
 		}
+		let sleeperData = await snek.get('http://api.satcom-70.com/dash/sleeper/' + sleeper.id);
+		sleeperData = JSON.parse(sleeperData.body).sleeper;
+		if (sleeperData) {
+			return sleeperData;
+		}
+		return sleeper;
+	} catch (err) {
+		log.error(`Uh-oh. Sqbika can't code...: ${err.stack}`);
+		return 'error'; // How to throw the staticly typed funcional Promise structure out of the window and set everything on fire with oil.
+	}
 };
 
-exports.resolveSleeper = async (sleeper) => {
-    try {
-        var sleepers = await snek.get('http://api.satcom-70.com/dash/sleeper/');
-        sleepers = JSON.parse(sleepers.body).sleepers;
-        return sleepers.find((slep => {
-            return slep.name.toLowerCase() == sleeper.toLowerCase();
-        }));
-    } catch (err) {
-        log.error(`Uh-oh. Sqbika can't code...: ${err.stack}`);
-        return "error"; //How to throw the staticly typed funcional Promise structure out of the window and set everything on fire with oil.
-    }
-}
+exports.resolveSleeper = sleeper => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			let sleepers = await snek.get('http://api.satcom-70.com/dash/sleeper/');
+			sleepers = JSON.parse(sleepers.body).sleepers;
+			resolve(sleepers.find((slep => {
+				// Console.log(slep);
+				// console.log(sleeper);
+				return slep.name.toLowerCase() === sleeper.toLowerCase();
+			})));
+		} catch (err) {
+			reject(err); // How to throw the staticly typed funcional Promise structure out of the window and set everything on fire with oil.
+		}
+	});
+};

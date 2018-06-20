@@ -73,6 +73,7 @@ exports.watcher = async bot => {
 				let screenshotDone = true;
 				let screenshotURL = encodeURI(`https://cdn.artemisbot.uk/mail/${mail.from[0].name}-${mail.date.toISOString()}.jpg`);
 				try {
+					//console.log(mail.html);
 					await util.promisify(webshot)(mail.html, `/var/www/cdn/mail/${mail.from[0].name}-${mail.date.toISOString()}.jpg`, {
 						shotSize: {
 							width: 'all',

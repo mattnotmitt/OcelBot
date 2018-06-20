@@ -64,9 +64,12 @@ const startStream = async bot => {
 				log.verbose(`User ${tweet.user.screen_name} has just tweeted at ${tweet.created_at}.`);
 
 				await Promise.all(watchers.map(watch => {
-					log.verbose(`Pass reply: ${!tweet.in_reply_to_user_id || watch.replies} | Pass filter: ${watch.filters.length > 0 ? watch.filters.every(filter => he.decode(tweet.text).includes(filter)) : true} | Send: ${(!tweet.in_reply_to_user_id || watch.replies) && (watch.filters.length > 0 ? watch.filters.every(filter => he.decode(tweet.text).includes(filter)) : true)}`);
-					if ((tweet.in_reply_to_user_id ? (tweet.in_reply_to_user_id === watch.twitterID || watch.replies) : true) && (watch.filters.length > 0 ? watch.filters.every(filter => he.decode(tweet.text).includes(filter)) : true)) {
-						return bot.channels.get(watch.channelID).send('', {embed});
+					const channel = bot.channels.get(watch.channelID);
+					const reply = tweet.in_reply_to_user_id ? (tweet.in_reply_to_user_id === watch.twitterID || watch.replies) : true;
+					const filter = watch.filters.length > 0 ? watch.filters.every(filter => he.decode(tweet.text).includes(filter)) : true;
+					log.verbose(`Channel: #${channel.name} on ${channel.guild.name} | Reply: ${tweet.in_reply_to_user_id !== undefined} | Pass reply: ${reply} | Filters: ${watch.filters.join(', ')} | Pass filter: ${filter} | Send: ${filter && reply}`);
+					if (reply && filter) {
+						return channel.send('', {embed});
 					} else if (watch.filters.length > 0) {
 						return log.verbose('Did not match filters for this channel\'s watcher.');
 					}

@@ -46,6 +46,7 @@ exports.start = async (msg, bot, args) => {
 		log.error(`Could not add new countdown: ${err.stack}`);
 	}
 };
+
 exports.list = async (msg, bot, args) => {
 	const channelID = args[0] && bot.channels.has(args[0]) ? args[0] : msg.channel.id;
 	const channel = bot.channels.get(args[0]) || msg.channel;
