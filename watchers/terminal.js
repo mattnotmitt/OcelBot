@@ -43,7 +43,7 @@ const checkCommands = async bot => {
 						description: `\`${statMsg}\``,
 						color: resp.success ? 0x00FC5D : 0xF00404,
 						footer: {
-							text: 'Watching Titan | ' + moment().utc().format("dddd, MMMM Do YYYY, h:mm:ss a"),
+							text: `Watching Titan | ${moment().utc().format("dddd, MMMM Do YYYY, h:mm:ss a")}`,
 							icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.png'
 						}
 					});
