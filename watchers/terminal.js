@@ -43,10 +43,9 @@ const checkCommands = async bot => {
 						description: `\`${statMsg}\``,
 						color: resp.success ? 0x00FC5D : 0xF00404,
 						footer: {
-							text: 'Watching Titan',
+							text: 'Watching Titan | ' + moment().utc().format("dddd, MMMM Do YYYY, h:mm:ss a"),
 							icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.png'
-						},
-						timestamp: moment().toISOString()
+						}
 					});
 					await T.post('statuses/update', {status: statMsg.length <= (204 - watch.command.length) ? `The wakingtitan.com ${watch.command} command has been updated to say "${statMsg}" #WakingTitan` : `The wakingtitan.com ${watch.command} command has been updated to say "${statMsg.slice(0, 203 - watch.command.length)}…" #WakingTitan`});
 					await Promise.all((await TerminalWatch.findAll({where: {command: watch.command}})).map(watcher =>
