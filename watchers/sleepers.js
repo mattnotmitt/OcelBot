@@ -48,7 +48,7 @@ const checkSleepers = async bot => {
 							description: `${changes.map(e => `Memory block ${e.svg_element_name.toUpperCase().split('_').join(' ')} is now active!`).join('\n')}`,
 							color: 0x00FC5D,
 							footer: {
-								text: `Watching Titan | ${moment().utc().format("dddd, MMMM Do YYYY, h:mm:ss a")}`,
+								text: `Watching Titan | ${moment().utc().format('dddd, MMMM Do YYYY, h:mm:ss a')}`,
 								icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.png'
 							}
 						});

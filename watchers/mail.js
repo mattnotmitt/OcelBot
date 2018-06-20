@@ -102,10 +102,9 @@ exports.watcher = async bot => {
 						url: screenshotURL
 					} : null,
 					footer: {
-						text: 'Sent',
+						text: `Sent ${moment(mail.date).utc().format('dddd, MMMM Do YYYY, h:mm:ss a')}`,
 						icon_url: 'https://cdn.artemisbot.uk/img/mail.png'
-					},
-					timestamp: mail.date
+					}
 				});
 				if (['info@wakingtitan.com', 'info@ware-mail.cloud'].includes(mail.from[0].address)) {
 					let previewObj;

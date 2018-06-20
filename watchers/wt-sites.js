@@ -77,7 +77,7 @@ const checkGlyphs = async bot => {
 					description: 'That\'s good, innit!',
 					footer: {
 						icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.png',
-						text: `Watching Titan | ${moment().utc().format("dddd, MMMM Do YYYY, h:mm:ss a")}`
+						text: `Watching Titan | ${moment().utc().format('dddd, MMMM Do YYYY, h:mm:ss a')}`
 					},
 					author: {
 						name: 'New glyph has activated!',
