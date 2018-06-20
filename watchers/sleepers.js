@@ -48,10 +48,9 @@ const checkSleepers = async bot => {
 							description: `${changes.map(e => `Memory block ${e.svg_element_name.toUpperCase().split('_').join(' ')} is now active!`).join('\n')}`,
 							color: 0x00FC5D,
 							footer: {
-								text: 'Watching Titan',
+								text: `Watching Titan | ${moment().utc().format("dddd, MMMM Do YYYY, h:mm:ss a")}`,
 								icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.png'
-							},
-							timestamp: moment().toISOString()
+							}
 						});
 						await Promise.all((await Sleepers.findAll({where: {sleeperID: resp.id}})).map(watcher =>
 							bot.channels.get(watcher.channelID).send('', {embed})

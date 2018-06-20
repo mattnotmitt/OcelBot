@@ -74,11 +74,10 @@ const checkGlyphs = async bot => {
 				log.info(`New glyph (${data.glyphs[i]}) at wakingtitan.com`);
 				const embed = new Discord.RichEmbed({
 					color: 0x993E4D,
-					timestamp: moment().toISOString(),
 					description: 'That\'s good, innit!',
 					footer: {
 						icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.png',
-						text: 'Watching Titan'
+						text: `Watching Titan | ${moment().utc().format("dddd, MMMM Do YYYY, h:mm:ss a")}`
 					},
 					author: {
 						name: 'New glyph has activated!',
