@@ -77,7 +77,7 @@ const checkGlyphs = async bot => {
 					description: 'That\'s good, innit!',
 					footer: {
 						icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.png',
-						text: `Watching Titan | ${moment().utc().format('dddd, MMMM Do YYYY, h:mm:ss a')}`
+						text: `Watching Titan | ${moment().utc().format('dddd, MMMM Do YYYY, HH:mm:ss [UTC]')}`
 					},
 					author: {
 						name: 'New glyph has activated!',
@@ -228,7 +228,6 @@ const checkSite = async (site, bot) => {
 			}
 			const embed = new Discord.RichEmbed({
 				color: 0x993E4D,
-				timestamp: timestamp.toISOString(),
 				description: embedDescription,
 				author: {
 					name: `${site.split('/').splice(2).join('/')} has updated`,
@@ -237,7 +236,7 @@ const checkSite = async (site, bot) => {
 				},
 				footer: {
 					icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.png',
-					text: 'Watching Titan'
+					text: `Watching Titan | ${timestamp.utc().format('dddd, MMMM Do YYYY, HH:mm:ss [UTC]')}`
 				}
 			});
 			let sendTweet = true;
