@@ -1,3 +1,5 @@
+// Originally contributed by Sqbika + iterated upon by Matt C
+
 exports.data = {
 	name: 'SatCom Uplink Files Watcher',
 	command: 'satcomfiles'
@@ -5,33 +7,23 @@ exports.data = {
 
 const Discord = require('discord.js');
 const _ = require('lodash');
+const snek = require('snekfetch');
 const moment = require('moment');
 const Twit = require('twit');
 const config = require('../config.json');
 const SatComFiles = require('../lib/models/satcomfiles.js');
-const getFiles = async params => {
+const log = require('../lib/log.js')(exports.data.name);
+
+const getFiles = async () => {
 	try {
-		let response = await snek.get('http://api.satcom-70.com/dash/weeklyrewards');
-		response = JSON.parse(sleeperData.body).message.list;
-		if (response) {
-			return response;
-		}
-		return response;
+		const response = await snek.get('http://api.satcom-70.com/dash/weeklyrewards');
+		//console.log(JSON.parse(response.body).message.list);
+		return JSON.parse(response.body).message.list;
 	} catch (err) {
 		log.error(`Uh-oh. Sqbika can't code...: ${err.stack}`);
 		return 'error'; // How to throw the staticly typed funcional Promise structure out of the window and set everything on fire with oil.
 	}
 };
-
-const deformat = (string) => {
-    return string.split(',').map(ele => praseFloat(ele));
-}
-
-const format = (input) => {
-    return input.map(ele => parseFloat(ele.progress)).join(',');
-}
-
-const log = require('../lib/log.js')(exports.data.name);
 
 let repeat;
 
@@ -42,40 +34,61 @@ const T = new Twit(config.WTTwitter);
 const checkSatComFiles = async bot => {
 	try {
 		await SatComFiles.sync();
+		if ((await SatComFiles.count()) < 1) {
+			return;
+		}
 		const lastFiles = (await SatComFiles.findOne({
-            order: [ [ 'createdAt', 'DESC' ]],
-        })).data;
-        lastFiles = deformat(lastFiles);
-        const newFiles = getFiles().map(ele => parseFloat(ele.progress));
+			order: [['createdAt', 'DESC']]
+		})).data;
+		const newFiles = await getFiles();
+		const newFilesArr = newFiles.map(ele => parseFloat(ele.progress));
 		log.debug(`Checking files.`);
-		const result = await Promise.all(newFiles.map(async (file, ind) => {
+		const result = await Promise.all(newFilesArr.map(async (file, ind) => {
 			return new Promise(async (resolve, reject) => {
 				try {
 					if (_.isEqual(file, lastFiles[ind])) {
 						return resolve(false);
 					}
-					log.info(`${ind+1} file percentage has increased.`);
-					if (file == 1 && lastFiles[ind] !== 1) {
+					log.info(`File #${ind + 1}  percentage has increased.`);
+					if (file === 1 && lastFiles[ind] !== 1) {
+						const fileData = JSON.parse(await snek.get(`http://api.satcom-70.com/dash/weeklyrewards/${newFiles[ind].hash}`)).message;
 						const embed = new Discord.RichEmbed({
 							author: {
-								name: `SatCom File ${ind+1} has been unlocked.`,
+								name: `SatCom Element ${ind + 1} has been unlocked.`,
 								icon_url: 'https://cdn.artemisbot.uk/img/hexagon.png',
 								url: 'https://uplink.satcom-70.com/dashboard/'
 							},
-							title: `**> \`SatCom File ${ind+1} has been unlocked.\`**`,
+							description: `${fileData.description.replace(/<.+?>/g, '')}\n[${fileData.name}](${fileData.file})`,
 							color: 0x00FC5D,
 							footer: {
-								text: `Watching Titan | ${moment().utc().format("dddd, MMMM Do YYYY, h:mm:ss a")}`,
+								text: `Watching Titan | ${moment().utc().format('dddd, MMMM Do YYYY, HH:mm:ss [UTC]')}`,
 								icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.png'
 							}
 						});
 						await Promise.all((await SatComFiles.findAll().map(watcher =>
 							bot.channels.get(watcher.channelID).send('', {embed})
 						)));
-						await T.post('statuses/update', {status: `Satcom file ${ind+1} has finished on https://uplink.satcom-70.com/dashboard/ #WakingTitan`});
+						//await T.post('statuses/update', {status: `Satcom file ${ind + 1} has unlocked on https://uplink.satcom-70.com/dashboard/ #WakingTitan`});
+					} else if (file !== lastFiles[ind]) {
+						const embed = new Discord.RichEmbed({
+							author: {
+								name: `SatCom Element ${ind + 1} has increased its percentage.`,
+								icon_url: 'https://cdn.artemisbot.uk/img/hexagon.png',
+								url: 'https://uplink.satcom-70.com/dashboard/'
+							},
+							description: `**${lastFiles[ind]}% -> ${file * 100}%**`,
+							color: 0x00FC5D,
+							footer: {
+								text: `Watching Titan | ${moment().utc().format('dddd, MMMM Do YYYY, h:mm:ss a')}`,
+								icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.png'
+							}
+						});
+						await Promise.all((await SatComFiles.findAll().map(watcher =>
+							bot.channels.get(watcher.channelID).send('', {embed})
+						)));
 					}
-					await Promise.all((await Sleepers.findAll().map(watcher =>
-						watcher.update({data: format(file)})
+					await Promise.all((await SatComFiles.findAll().map(watcher =>
+						watcher.update({data: newFilesArr})
 					)));
 					resolve(true);
 				} catch (err) {
@@ -85,10 +98,10 @@ const checkSatComFiles = async bot => {
 			});
 		}));
 		if (!result.includes(true)) {
-			log.debug('No sleepers have changed.');
+			log.debug('No satcom files have changed.');
 		}
 	} catch (err) {
-		log.error(`Failed to check all sleepers: ${err.stack}`);
+		log.error(`Failed to check all satcom files: ${err.stack}`);
 	}
 	repeat = setTimeout(async () => {
 		checkSatComFiles(bot);
@@ -98,23 +111,23 @@ const checkSatComFiles = async bot => {
 exports.watcher = bot => {
 	this.disable();
 	repeat = setTimeout(async () => {
-		checkSleepers(bot);
+		checkSatComFiles(bot);
 	}, 15 * 1000);
 	log.verbose(`${exports.data.name} has initialised successfully.`);
 };
 
-exports.start = async (msg, bot, args) => {
+exports.start = async msg => {
 	try {
 		await SatComFiles.sync();
 		if (await SatComFiles.findOne({where: {channelID: msg.channel.id}})) {
 			return msg.reply(`I am already watching the satcom files in this channel.`);
 		}
 		log.info(`Now outputting satcom file updates to #${msg.channel.name} in ${msg.guild.name}.`);
-        msg.reply(`Now outputting satcom file updates to this channel.`);
-        data = (await getFiles()).map(ele => ele.progress);
+		msg.reply(`Now outputting satcom file updates to this channel.`);
+		const data = (await getFiles()).map(ele => parseFloat(ele.progress));
 		await SatComFiles.create({
 			channelID: msg.channel.id,
-            data: format(data)
+			data
 		});
 	} catch (err) {
 		msg.reply('Couldn\'t watch the files! Check the logs.');
@@ -122,7 +135,7 @@ exports.start = async (msg, bot, args) => {
 	}
 };
 
-exports.stop = async (msg, bot, args) => {
+exports.stop = async msg => {
 	const watch = await SatComFiles.findOne({where: {channelID: msg.channel.id}});
 	if (watch) {
 		watch.destroy();

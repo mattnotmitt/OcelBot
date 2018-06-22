@@ -102,7 +102,7 @@ exports.watcher = async bot => {
 						url: screenshotURL
 					} : null,
 					footer: {
-						text: `Sent ${moment(mail.date).utc().format('dddd, MMMM Do YYYY, h:mm:ss a')}`,
+						text: `Sent ${moment(mail.date).utc().format('dddd, MMMM Do YYYY, HH:mm:ss [UTC]')}`,
 						icon_url: 'https://cdn.artemisbot.uk/img/mail.png'
 					}
 				});

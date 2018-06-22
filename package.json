@@ -18,6 +18,7 @@
         "he": "^1.1.1",
         "htmlparser2": "^3.9.2",
         "humanize-duration": "^3.12.1",
+        "lodash": "^4.17.10",
         "mail-listener2": "^0.3.1",
         "moment": "^2.20.1",
         "pg": "^7.4.1",
