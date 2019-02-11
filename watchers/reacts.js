@@ -36,7 +36,7 @@ const parseReactions = async (reaction, user) => {
 
 exports.watcher = bot => {
 	// Startup process for watcher
-	log.info(`${exports.data.name} has initialised successfully.`);
+	log.verbose(`${exports.data.name} has initialised successfully.`);
 	gBot = bot;
 	bot.on('messageReactionAdd', parseReactions);
 };

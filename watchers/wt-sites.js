@@ -15,7 +15,7 @@ const htmlparser = require('htmlparser2');
 const jetpack = require('fs-jetpack');
 const moment = require('moment');
 const snek = require('snekfetch');
-const Spreadsheet = require('edit-google-spreadsheet');
+// Const Spreadsheet = require('edit-google-spreadsheet');
 const strftime = require('strftime');
 const Twit = require('twit');
 const TwitterMedia = require('twitter-media');
@@ -335,17 +335,10 @@ const checkSite = async (site, bot) => {
 				}
 
 				await Promise.all(data.channels.map(async channel => {
-					const m = await bot.channels.get(channel).send('', {embed});
 					try {
-						if (extranet) {
-							if (data.extranetMessages[channel]) {
-								log.verbose('Deleting previous update message!');
-								(await bot.channels.get(channel).fetchMessage(data.extranetMessages[channel])).delete();
-							}
-							data.extranetMessages[channel] = m.id;
-						}
+						await bot.channels.get(channel).send('', {embed});
 					} catch (err) {
-						log.warn(`Unable to delete old update message for extranet: ${err.stack}`);
+						log.warn(`Unable to send update message: ${err.stack}`);
 					}
 				}));
 				if (sendTweet) {

@@ -17,7 +17,7 @@ const log = require('../lib/log.js')(exports.data.name);
 const getFiles = async () => {
 	try {
 		const response = await snek.get('http://api.satcom-70.com/dash/weeklyrewards');
-		//console.log(JSON.parse(response.body).message.list);
+		// Console.log(JSON.parse(response.body).message.list);
 		return JSON.parse(response.body).message.list;
 	} catch (err) {
 		log.error(`Uh-oh. Sqbika can't code...: ${err.stack}`);
@@ -40,18 +40,20 @@ const checkSatComFiles = async bot => {
 		const lastFiles = (await SatComFiles.findOne({
 			order: [['createdAt', 'DESC']]
 		})).data;
+		// Console.log(lastFiles);
 		const newFiles = await getFiles();
 		const newFilesArr = newFiles.map(ele => parseFloat(ele.progress));
 		log.debug(`Checking files.`);
 		const result = await Promise.all(newFilesArr.map(async (file, ind) => {
 			return new Promise(async (resolve, reject) => {
 				try {
-					if (_.isEqual(file, lastFiles[ind])) {
+					if (_.isEqual(file, parseFloat(lastFiles[ind].toString()))) {
 						return resolve(false);
 					}
 					log.info(`File #${ind + 1}  percentage has increased.`);
 					if (file === 1 && lastFiles[ind] !== 1) {
-						const fileData = JSON.parse(await snek.get(`http://api.satcom-70.com/dash/weeklyrewards/${newFiles[ind].hash}`)).message;
+						console.log(file);
+						const fileData = JSON.parse((await snek.get(`http://api.satcom-70.com/dash/weeklyrewards/${newFiles[ind].hash}`)).body).message;
 						const embed = new Discord.RichEmbed({
 							author: {
 								name: `SatCom Element ${ind + 1} has been unlocked.`,
@@ -68,18 +70,18 @@ const checkSatComFiles = async bot => {
 						await Promise.all((await SatComFiles.findAll().map(watcher =>
 							bot.channels.get(watcher.channelID).send('', {embed})
 						)));
-						//await T.post('statuses/update', {status: `Satcom file ${ind + 1} has unlocked on https://uplink.satcom-70.com/dashboard/ #WakingTitan`});
-					} else if (file !== lastFiles[ind]) {
+						await T.post('statuses/update', {status: `Satcom element ${ind + 1} has unlocked: ${fileData.file} #WakingTitan`});
+					} else if (file * 100 !== lastFiles[ind] * 100) {
 						const embed = new Discord.RichEmbed({
 							author: {
 								name: `SatCom Element ${ind + 1} has increased its percentage.`,
 								icon_url: 'https://cdn.artemisbot.uk/img/hexagon.png',
 								url: 'https://uplink.satcom-70.com/dashboard/'
 							},
-							description: `**${lastFiles[ind]}% -> ${file * 100}%**`,
+							description: `**${Math.ceil(lastFiles[ind] * 100)}% -> ${Math.ceil(file * 100)}%**`,
 							color: 0x00FC5D,
 							footer: {
-								text: `Watching Titan | ${moment().utc().format('dddd, MMMM Do YYYY, h:mm:ss a')}`,
+								text: `Watching Titan | ${moment().utc().format('dddd, MMMM Do YYYY, HH:mm:ss [UTC]')}`,
 								icon_url: 'https://cdn.artemisbot.uk/img/watchingtitan.png'
 							}
 						});

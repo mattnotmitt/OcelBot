@@ -1,40 +1,61 @@
 {
-	"prefix": "",
+  "prefix": "",
+  "token": "",
+  "ownerID": "",
+  "twitch_clientid": "",
+  "WTTwitter": {
+    "consumer_key": "",
+    "consumer_secret": "",
+    "access_token": "",
+    "access_token_secret": "",
 	"token": "",
-	"ownerID": "",
-	"debugServer": "",
-	"twitch_clientid": "",
-	"twitter": {
-	    "consumer_key": "",
-	    "consumer_secret": "",
-	    "access_token": "",
-	    "access_token_secret": ""
-	},
-	"WTTwitter": {
-	    "consumer_key": "",
-	    "consumer_secret": "",
-	    "access_token": "",
-	    "access_token_secret": ""
-		},
-	"youtubeKey": "",
-	"steamKey": "",
-	"wiki_user": "",
-	"wiki_pass": "",
-	"gdrive_service_account": {
-	    "type": "",
-	    "project_id": "",
-	    "private_key_id": "",
-	    "private_key": "",
-	    "client_email": "",
-	    "client_id": "",
-	    "auth_uri": "",
-	    "token_uri": "",
-	    "auth_provider_x509_cert_url": "",
-	    "client_x509_cert_url": ""
-	},
-	"dbPass": "",
-	"mailUsername": "",
-	"mailPassword": "",
-	"mailHost": "",
-	"lfmKey": ""
+	"token_secret": ""
+  },
+  "TBTwitter": {
+	"consumer_key": "",
+	"consumer_secret": "",
+	"access_token": "",
+	"access_token_secret": "",
+	"token": "",
+	"token_secret": ""
+  },
+  "youtubeKey": "",
+  "steamKey": "",
+  "wiki_user": "",
+  "wiki_pass": "",
+  "gdrive_service_account": {
+    "type": "",
+    "project_id": "",
+    "private_key_id": "",
+    "private_key": "",
+    "client_email": "",
+    "client_id": "",
+    "auth_uri": "",
+    "token_uri": "",
+    "auth_provider_x509_cert_url": "",
+    "client_x509_cert_url": ""
+  },
+  "spreadsheet_auth": {
+    "client_id": "",
+    "client_secret": "",
+    "refresh_token": ""
+  },
+  "dbPass": "",
+  "mailUsername": "",
+  "mailPassword": "",
+  "mailHost": "",
+  "activeChannels": [],
+  "lfmKey": "",
+  "spotifyCid": "",
+  "spotifySecret": "",
+  "debugServer": "",
+  "helpers": [],
+  "skypeCreds": {
+    "username": "",
+    "password": ""
+  },
+  "winstonDiscord": {
+    "id": "",
+    "token": ""
+  }
 }

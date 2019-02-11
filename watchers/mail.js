@@ -7,7 +7,7 @@ exports.data = {
 
 const util = require('util');
 
-const MailListener = require('mail-listener2');
+const MailListener = require('mail-listener4');
 const moment = require('moment');
 const Discord = require('discord.js');
 const Twit = require('twit');
@@ -19,7 +19,7 @@ const MailWatch = require('../lib/models/mailwatch');
 const log = require('../lib/log.js')(exports.data.name);
 const config = require('../config.json');
 
-const T = new Twit(config.WTTwitter);
+const T = new Twit(config.TBTwitter);
 const ml = new MailListener({
 	username: config.mailUsername,
 	password: config.mailPassword,
@@ -29,7 +29,7 @@ const ml = new MailListener({
 	debug: log.debug, // Or your custom function with only one incoming argument. Default: null
 	mailbox: 'INBOX', // Mailbox to monitor
 	searchFilter: ['UNSEEN'], // The search filter being used after an IDLE notification has been retrieved
-	markSeen: false, // All fetched email willbe marked as seen and not fetched next time
+	markSeen: true, // All fetched email willbe marked as seen and not fetched next time
 	fetchUnreadOnStart: true,
 	mailParserOptions: {
 		streamAttachments: true
@@ -38,42 +38,43 @@ const ml = new MailListener({
 });
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-let gBot;
 const reload = async () => {
-	ml.removeAllListeners();
 	log.error(`Bot has disconnected from IMAP server.`);
 	await delay(10000);
 	log.info(`Attempting to reconnect.`);
-	this.watcher(gBot);
+	ml.restart();
 };
 
 exports.watcher = async bot => {
 	// Startup process for watcher
-	this.disable();
+	// this.disable();
 	await delay(5000);
 	log.verbose('Starting IMAP connection.');
 	ml.on('server:connected', () => {
 		log.verbose(`${exports.data.name} has initialised successfully and connected to the IMAP server.`);
 	});
 	ml.on('server:disconnected', reload);
+	ml.on('mailbox', mailbox => {
+		log.debug('Total number of mails: ', mailbox.messages.total); // This field in mailbox gives the total number of emails
+	});
 	ml.on('error', err => {
 		log.error(`Issue with IMAP: ${err.stack}`);
 	});
-	ml.on('mail', async (mail, seqno, attributes) => {
+	ml.on('mail', async mail => {
 		try {
 			log.debug(`New email received from "${mail.headers.from}" with subject "${mail.subject}".`);
 			const mailWatchers = await MailWatch.findAll({where: {address: mail.from[0].address}});
 			if (mailWatchers.length > 0) {
-				ml.imap.addFlags(attributes.uid, '\\Seen', err => {
+				/* Ml.imap.addFlags(attributes.uid, '\\Seen', err => {
 					if (!err) {
 						log.debug('Mail has been set as read.');
 					}
-				});
+				}); */
 				log.info(`New email received from "${mail.headers.from}" with subject "${mail.subject}".`);
 				let screenshotDone = true;
 				let screenshotURL = encodeURI(`https://cdn.artemisbot.uk/mail/${mail.from[0].name}-${mail.date.toISOString()}.jpg`);
 				try {
-					//console.log(mail.html);
+					// Console.log(mail.html);
 					await util.promisify(webshot)(mail.html, `/var/www/cdn/mail/${mail.from[0].name}-${mail.date.toISOString()}.jpg`, {
 						shotSize: {
 							width: 'all',
@@ -90,7 +91,7 @@ exports.watcher = async bot => {
 					screenshotURL = '';
 					log.error(`Error when generating webshot screenshot: ${err.stack}`);
 				}
-				console.log(screenshotURL);
+				// Console.log(screenshotURL);
 				const embed = new Discord.RichEmbed({
 					author: {
 						name: `A new email has been received from ${mail.headers.from}`,
@@ -106,10 +107,10 @@ exports.watcher = async bot => {
 						icon_url: 'https://cdn.artemisbot.uk/img/mail.png'
 					}
 				});
-				if (['info@wakingtitan.com', 'info@ware-mail.cloud'].includes(mail.from[0].address)) {
+				if (['info@tenderbeta.com'].includes(mail.from[0].address)) {
 					let previewObj;
 					if (screenshotDone) {
-						const tm = new TwitterMedia(config.WTTwitterMedia);
+						const tm = new TwitterMedia(config.TBTwitter);
 						try {
 							const imageBuffer = jetpack.read(`/var/www/cdn/mail/${mail.from[0].name}-${mail.date.toISOString()}.jpg`, 'buffer');
 							previewObj = await tm.uploadMedia('image', imageBuffer);
@@ -121,8 +122,8 @@ exports.watcher = async bot => {
 					}
 					await T.post('statuses/update', {
 						status: mail.subject.length <= (216 - mail.headers.from.length) ?
-							`A new email has been received from ${mail.headers.from} with subject "${mail.subject}" #WakingTitan` :
-							`A new email has been received from ${mail.headers.from} with subject "${mail.subject.slice(0, 215 - mail.headers.from.length)}…" #WakingTitan`,
+							`A new email has been received from ${mail.headers.from} with subject "${mail.subject}" #TenderBeta #TrustNoMore` :
+							`A new email has been received from ${mail.headers.from} with subject "${mail.subject.slice(0, 215 - mail.headers.from.length)}…" #TenderBeta`,
 						media_ids: screenshotDone ? previewObj.media_id_string : ''
 					});
 				}
@@ -212,7 +213,7 @@ exports.list = async (msg, bot, args) => {
 
 exports.disable = () => {
 	try {
-		ml.removeAllListeners();
+		ml.imap.removeAllListeners();
 		ml.stop();
 	} catch (err) {
 		log.error(`Failed to stop listener: ${err}`);

@@ -24,7 +24,7 @@ exports.func = async (msg, args) => {
 		const options = {
 			id: args[0].split('/').slice(-1).pop() || args[0]
 		};
-		const T = new Twit(config.twitter);
+		const T = new Twit(config.WTTwitter);
 		const tweet = (await T.get('statuses/show/:id', {
 			id: options.id
 		})).data;
