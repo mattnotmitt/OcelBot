@@ -25,3 +25,5 @@ emote-site/build/logo\.png
 edit-spreadsheet\.js
 
 gen-users-from-log\.js
+
+cmdData\.json

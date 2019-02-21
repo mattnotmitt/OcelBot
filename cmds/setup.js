@@ -54,7 +54,7 @@ exports.func = async msg => {
 		const dm = await msg.author.createDM();
 		dm.send(`\`\`\`${roleList}\`\`\``);
 		/*
-		const server = await Server.findOne({
+		Const server = await Server.findOne({
 			where: {
 				guildId: msg.guild.id
 			}

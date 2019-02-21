@@ -75,7 +75,7 @@ bot.loadWatchers = bot => {
 							watcher = await Watcher.create({
 								watcherName: props.data.command,
 								globalEnable: true,
-								disabledGuilds: []
+								disabledGuilds: (props.data.disable || false) ? [...bot.guilds.keys()] : []
 							});
 						}
 						if (watcher.globalEnable) { // Load the watcher if it is globally enabled
@@ -171,7 +171,7 @@ bot.on('message', async msg => {
 			return true;
 		});
 
-		if (msg.content.match(/:(.+?):/g) && msg.server.emotes) { // Check if message is an emote
+		if (msg.content.match(/(?:[^<]|^):(.+?):/g) && msg.server.emotes) { // Check if message is an emote
 			emotes = msg.content.match(/:(.+?):/g); // Create array of emote names from message
 		} else if (notCommand) { // If it's not an emote and not a command, reject it
 			return;

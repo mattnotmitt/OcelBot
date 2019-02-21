@@ -15,7 +15,7 @@ const config = require('../config.json');
 const log = require('../lib/log')(exports.data.name);
 const TwitterWatch = require('../lib/models/twitterwatch');
 
-const T = new Twit(config.twitter);
+const T = new Twit(config.WTTwitter);
 
 let botStream;
 
@@ -62,12 +62,11 @@ const startStream = async bot => {
 			watchers = await TwitterWatch.findAll({where: {twitterID: tweet.user.id_str}});
 			if (watchers.length > 0) {
 				log.verbose(`User ${tweet.user.screen_name} has just tweeted at ${tweet.created_at}.`);
-
 				await Promise.all(watchers.map(watch => {
 					const channel = bot.channels.get(watch.channelID);
-					const reply = tweet.in_reply_to_user_id ? (tweet.in_reply_to_user_id === watch.twitterID || watch.replies) : true;
+					const reply = tweet.in_reply_to_user_id === null ? true : (tweet.in_reply_to_user_id === watch.twitterID || watch.replies);
 					const filter = watch.filters.length > 0 ? watch.filters.every(filter => he.decode(tweet.text).includes(filter)) : true;
-					log.verbose(`Channel: #${channel.name} on ${channel.guild.name} | Reply: ${tweet.in_reply_to_user_id !== undefined} | Pass reply: ${reply} | Filters: ${watch.filters.join(', ')} | Pass filter: ${filter} | Send: ${filter && reply}`);
+					log.verbose(`Channel: #${channel.name} on ${channel.guild.name} | Reply: ${tweet.in_reply_to_user_id !== null} | Pass reply: ${reply} | Filters: ${watch.filters.join(', ')} | Pass filter: ${filter} | Send: ${filter && reply}`);
 					if (reply && filter) {
 						return channel.send('', {embed});
 					} else if (watch.filters.length > 0) {
