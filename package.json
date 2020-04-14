@@ -18,7 +18,7 @@
         "htmlparser2": "^3.9.2",
         "humanize-duration": "^3.12.1",
         "jimp": "^0.6.0",
-        "lodash": "^4.17.10",
+        "lodash": "^4.17.13",
         "mail-listener4": "git+https://github.com/lgwb89/mail-listener2.git",
         "moment": "^2.20.1",
         "pg": "^7.4.1",
