@@ -24,7 +24,7 @@
         "pg": "^7.4.1",
         "request": "^2.88.0",
         "request-promise-native": "^1.0.4",
-        "sequelize": "^4.29.0",
+        "sequelize": "^5.15.1",
         "skype-http": "0.0.15",
         "snekfetch": "^3.6.1",
         "strftime": "^0.10.0",
